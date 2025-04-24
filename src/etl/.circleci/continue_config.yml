@@ -1,0 +1,53 @@
+
+version: 2.1
+
+parameters:
+  run_common:
+    type: boolean
+    default: false
+  run_japan:
+    type: boolean
+    default: false
+
+jobs:
+  build-image:
+    docker:
+      - image: cimg/python:3.10
+    parameters:
+      target:
+        type: string
+      context:
+        type: string
+      tag:
+        type: string
+      base_image:
+        type: string
+        default: ""
+    steps:
+      - checkout
+      - run:
+          name: Build << parameters.target >> image
+          command: |
+            echo "Building << parameters.target >>"
+            echo "From context: << parameters.context >>"
+            echo "Using base image: << parameters.base_image >>"
+
+workflows:
+  version: 2
+  etl-build:
+    jobs:
+      - build-image:
+          name: build-common
+          target: common
+          context: src/etl/common
+          tag: dummy-registry/etl-common:latest
+          base_image: dummy-registry/etl-base:latest
+          when: << pipeline.parameters.run_common >>
+
+      - build-image:
+          name: build-japan
+          target: japan
+          context: src/etl/japan
+          tag: dummy-registry/etl-japan:latest
+          base_image: dummy-registry/etl-common:latest
+          when: << pipeline.parameters.run_japan >>
