@@ -1,0 +1,16 @@
+
+version: 2.1
+
+orbs:
+  path-filtering: circleci/path-filtering@0.1.3
+
+workflows:
+  path-trigger:
+    jobs:
+      - path-filtering/filter:
+          name: detect-etl-changes
+          base-revision: main
+          config-path: src/etl/.circleci/continue_config.yml
+          mapping: |
+            src/etl/common/.* run_common true
+            src/etl/japan/.* run_japan true
