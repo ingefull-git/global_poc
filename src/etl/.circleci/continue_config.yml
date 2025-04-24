@@ -9,6 +9,19 @@ parameters:
     type: boolean
     default: false
 
+commands:
+  conditional_common: &conditional_common
+    filters:
+      branches:
+        only: main
+    if: << pipeline.parameters.run_common >>
+
+  conditional_japan: &conditional_japan
+    filters:
+      branches:
+        only: main
+    if: << pipeline.parameters.run_japan >>
+
 jobs:
   build-image:
     docker:
@@ -42,7 +55,7 @@ workflows:
           build_context: src/etl/common
           tag: dummy-registry/etl-common:latest
           base_image: dummy-registry/etl-base:latest
-          when: << pipeline.parameters.run_common >>
+          <<: *conditional_common
 
       - build-image:
           name: build-japan
@@ -50,4 +63,4 @@ workflows:
           build_context: src/etl/japan
           tag: dummy-registry/etl-japan:latest
           base_image: dummy-registry/etl-common:latest
-          when: << pipeline.parameters.run_japan >>
+          <<: *conditional_japan
