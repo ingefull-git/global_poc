@@ -1,2 +1,2 @@
 FROM python:3.10-slim
-RUN echo 'Common image'
+RUN echo 'Common image updated'
