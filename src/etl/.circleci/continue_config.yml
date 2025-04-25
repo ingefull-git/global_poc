@@ -45,11 +45,5 @@ jobs:
 workflows:
   etl:
     jobs:
-      - build-and-push-common-image:
-          filters:
-            branches:
-              only: /.*/
-      - build-and-push-japan-image:
-          filters:
-            branches:
-              only: /.*/
+      - build-and-push-common-image
+      - build-and-push-japan-image
