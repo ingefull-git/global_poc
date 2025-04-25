@@ -42,17 +42,10 @@ jobs:
           command: |
             source /tmp/parameters.txt
             echo "Detected market: $market"
-            if [ "$market" = "japan" ]; then
-              cp src/etl/.circleci/continue_config_japan.yml /tmp/continue_config.yml
-            elif [ "$market" = "common" ]; then
-              cp src/etl/.circleci/continue_config_common.yml /tmp/continue_config.yml
-            else
-              echo "No relevant changes detected. Exiting."
-              circleci-agent step halt
-            fi
+            cp src/etl/.circleci/continue_config.yml /tmp/continue_config.yml
       - continuation/continue:
           configuration_path: /tmp/continue_config.yml
-          parameters: '{}'
+          parameters: '{"market": "<< pipeline.parameters.market >>"}'
 
 workflows:
   setup:
