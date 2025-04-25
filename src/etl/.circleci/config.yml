@@ -58,7 +58,6 @@ jobs:
 
 # WORKFLOWS
 workflows:
-  version: 2
   build:
     jobs:
       - check-paths
