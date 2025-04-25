@@ -41,7 +41,7 @@ jobs:
             echo "Detected market: $MARKET"
             if [ "$MARKET" != "common" ]; then
               echo "Skipping common image build for market: $MARKET"
-              exit 0
+              circleci-agent step halt
             fi
             echo "Building common image..."
             echo "export MARKET=$MARKET" >> $BASH_ENV
@@ -67,7 +67,7 @@ jobs:
               echo "export MARKET=$MARKET" >> $BASH_ENV
               echo "Building etl image..."
             else    
-              exit 0
+              circleci-agent step halt
             fi
       - run:
           name: build and push etl image
