@@ -1,0 +1,40 @@
+version: 2.1
+
+jobs:
+  build-and-push-common-image:
+    docker:
+      - image: cimg/python:3.10
+    steps:
+      - checkout
+      - run:
+          name: Build and push common image
+          command: |
+            echo "Building and pushing common image for tag: common_${CIRCLE_SHA1::7}"
+            # Add your docker build/push commands here
+
+  build-and-push-japan-image:
+    docker:
+      - image: cimg/python:3.10
+    steps:
+      - checkout
+      - run:
+          name: Build and push japan image
+          command: |
+            echo "Building and pushing japan image for tag: japan_${CIRCLE_SHA1::7}"
+            # Add your docker build/push commands here
+
+workflows:
+  version: 2
+  build_common:
+    when:
+      condition:
+        equal: ["true", << pipeline.parameters.build_common >>]
+    jobs:
+      - build-and-push-common-image
+
+  build_japan:
+    when:
+      condition:
+        equal: ["true", << pipeline.parameters.build_japan >>]
+    jobs:
+      - build-and-push-japan-image
