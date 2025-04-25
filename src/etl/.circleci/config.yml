@@ -43,7 +43,8 @@ jobs:
       - run:
           name: setup operations-0 aws credentials
           command: |
-            echo "This is final step, tag : $MARKET_${CIRCLE_SHA1::7}" 
+            source $BASH_ENV
+            echo "This is final step, tag : ${MARKET}_${CIRCLE_SHA1::7}" 
 
 
 workflows:
