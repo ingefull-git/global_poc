@@ -1,10 +1,5 @@
 version: 2.1
 
-parameters:
-  market:
-    type: string
-    default: none
-
 jobs:
   build-and-push-common-image:
     docker:
@@ -12,30 +7,15 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Check if market is common
-          command: |
-            if [ "<< pipeline.parameters.market >>" != "common" ]; then
-              echo "Skipping: market is not common"
-              exit 0
-            fi
-      - run:
           name: Build and push common image
           command: |
             echo "Building and pushing common image for tag: common_${CIRCLE_SHA1::7}"
             # Add your docker build/push commands here
-
   build-and-push-japan-image:
     docker:
       - image: cimg/python:3.10
     steps:
       - checkout
-      - run:
-          name: Check if market is japan
-          command: |
-            if [ "<< pipeline.parameters.market >>" != "japan" ]; then
-              echo "Skipping: market is not japan"
-              exit 0
-            fi
       - run:
           name: Build and push japan image
           command: |
@@ -45,5 +25,11 @@ jobs:
 workflows:
   etl:
     jobs:
-      - build-and-push-common-image
-      - build-and-push-japan-image
+      - build-and-push-common-image:
+          filters:
+            paths:
+              - src/etl/common/**
+      - build-and-push-japan-image:
+          filters:
+            paths:
+              - src/etl/japan/**
