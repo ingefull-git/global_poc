@@ -23,7 +23,7 @@ jobs:
             echo "Building and pushing japan image for tag: japan_${CIRCLE_SHA1::7}"
 
 workflows:
-  etl:
+  filter-changes:
     jobs:
       - path-filtering/filter:
           name: check-changes
@@ -31,17 +31,11 @@ workflows:
             src/etl/common/.* build_common true
             src/etl/japan/.* build_japan true
           base-revision: main
+          trigger: true
+  etl:
+    when: << pipeline.parameters.build_common >> or << pipeline.parameters.build_japan >>
+    jobs:
       - build-and-push-common-image:
-          requires:
-            - check-changes
-          filters:
-            branches:
-              only: /.*/
           when: << pipeline.parameters.build_common >>
       - build-and-push-japan-image:
-          requires:
-            - check-changes
-          filters:
-            branches:
-              only: /.*/
           when: << pipeline.parameters.build_japan >>
