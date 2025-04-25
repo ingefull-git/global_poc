@@ -1,6 +1,6 @@
 version: 2.1
 
-setup: true  # Dynamic Config enabled
+setup: true
 
 orbs:
   path-filtering: circleci/path-filtering@1.2.0  # Official CircleCI path-filtering orb

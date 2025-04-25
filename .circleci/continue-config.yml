@@ -1,5 +1,8 @@
 version: 2.1
 
+orbs:
+  path-filtering: circleci/path-filtering@1.2.0  # Official CircleCI path-filtering orb
+
 parameters:
   build_common:
     type: boolean
