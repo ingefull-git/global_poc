@@ -36,6 +36,7 @@ jobs:
     steps:
       - attach_workspace:
           at: /tmp
+      - checkout
       - run:
           name: Read market parameter
           command: |
