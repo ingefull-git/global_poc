@@ -45,7 +45,5 @@ jobs:
 workflows:
   etl:
     jobs:
-      - build-and-push-common-image:
-          when: << pipeline.parameters.market >> == "common"
-      - build-and-push-japan-image:
-          when: << pipeline.parameters.market >> == "japan"
+      - build-and-push-common-image
+      - build-and-push-japan-image
