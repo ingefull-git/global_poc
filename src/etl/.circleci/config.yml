@@ -11,6 +11,12 @@ jobs:
     steps:
       - checkout
       - run:
+          name: Install CircleCI continuation plugin
+          command: |
+            circleci setup
+            circleci update
+            circleci plugin install continuation
+      - run:
           name: Detect updated market path and continue
           command: |
             git fetch origin main --depth=1
