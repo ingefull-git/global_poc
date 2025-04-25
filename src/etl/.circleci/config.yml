@@ -11,41 +11,19 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Install CircleCI continuation plugin
-          command: |
-            circleci setup
-            circleci update
-            circleci plugin install continuation
-      - run:
           name: Detect updated market path and continue
           command: |
             git fetch origin main --depth=1
             if git diff --name-only origin/main...HEAD | grep -q "src/etl/japan/"; then
               echo 'Detected market: japan'
-              circleci step halt
+              circleci continuation continue -c src/etl/.circleci/continue_config_japan.yml -p '{}'
             elif git diff --name-only origin/main...HEAD | grep -q "src/etl/common/"; then
               echo 'Detected market: common'
-              circleci step halt
+              circleci continuation continue -c src/etl/.circleci/continue_config_common.yml -p '{}'
             else
               echo 'No relevant changes detected. Exiting.'
               circleci-agent step halt
             fi
-      - when:
-          condition:
-            and:
-              - << pipeline.parameters.detected_market >> == "japan"
-          steps:
-            - continuation/continue:
-                configuration_path: src/etl/.circleci/continue_config_japan.yml
-                parameters: '{}'
-      - when:
-          condition:
-            and:
-              - << pipeline.parameters.detected_market >> == "common"
-          steps:
-            - continuation/continue:
-                configuration_path: src/etl/.circleci/continue_config_common.yml
-                parameters: '{}'
 
 workflows:
   setup:
