@@ -27,6 +27,30 @@ jobs:
           paths:
             - market.txt
 
+  build-and-push-common-image:
+    docker:
+      - image: cimg/python:3.10
+    working_directory: ~/market_etl
+    steps:
+      - attach_workspace:
+          at: ~/workspace
+      - run:
+          name: Read selected market
+          command: |
+            MARKET=$(cat ~/workspace/market.txt)
+            echo "Detected market: $MARKET"
+            if [ "$MARKET" != "common" ]; then
+              echo "Skipping common image build for market: $MARKET"
+              exit 0
+            fi
+            echo "Building common image..."
+            echo "export MARKET=$MARKET" >> $BASH_ENV
+      - run:
+          name: build and push common image
+          command: |
+            source $BASH_ENV
+            echo "This is final step, tag : ${MARKET}_${CIRCLE_SHA1::7}" 
+
   build-and-push-etl-image:
     docker:
       - image: cimg/python:3.10
@@ -39,9 +63,14 @@ jobs:
           command: |
             MARKET=$(cat ~/workspace/market.txt)
             echo "Detected market: $MARKET"
-            echo "export MARKET=$MARKET" >> $BASH_ENV
+            if [ "$MARKET" != "common" ]; then
+              echo "export MARKET=$MARKET" >> $BASH_ENV
+              echo "Building etl image..."
+            else    
+              exit 0
+            fi
       - run:
-          name: setup operations-0 aws credentials
+          name: build and push etl image
           command: |
             source $BASH_ENV
             echo "This is final step, tag : ${MARKET}_${CIRCLE_SHA1::7}" 
@@ -52,6 +81,9 @@ workflows:
   etl:
     jobs:
       - detect-market
+      - build-and-push-common-image:
+          requires:
+            - detect-market
       - build-and-push-etl-image:
           requires:
             - detect-market
