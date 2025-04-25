@@ -4,6 +4,11 @@ setup: true
 orbs:
   continuation: circleci/continuation@0.1.2
 
+parameters:
+  market:
+    type: string
+    default: "none"
+
 jobs:
   detect-market:
     docker:
@@ -11,21 +16,46 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Detect updated market path and continue
+          name: Detect updated market path
           command: |
             git fetch origin main --depth=1
             if git diff --name-only origin/main...HEAD | grep -q "src/etl/japan/"; then
-              echo 'Detected market: japan'
-              circleci continuation continue -c src/etl/.circleci/continue_config_japan.yml -p '{}'
+              echo "market=japan" >> /tmp/parameters.txt
             elif git diff --name-only origin/main...HEAD | grep -q "src/etl/common/"; then
-              echo 'Detected market: common'
-              circleci continuation continue -c src/etl/.circleci/continue_config_common.yml -p '{}'
+              echo "market=common" >> /tmp/parameters.txt
             else
-              echo 'No relevant changes detected. Exiting.'
+              echo "market=none" >> /tmp/parameters.txt
+      - persist_to_workspace:
+          root: /tmp
+          paths:
+            - parameters.txt
+  continue-config:
+    docker:
+      - image: cimg/python:3.10
+    steps:
+      - attach_workspace:
+          at: /tmp
+      - run:
+          name: Read market parameter
+          command: |
+            source /tmp/parameters.txt
+            echo "Detected market: $market"
+            if [ "$market" = "japan" ]; then
+              cp src/etl/.circleci/continue_config_japan.yml /tmp/continue_config.yml
+            elif [ "$market" = "common" ]; then
+              cp src/etl/.circleci/continue_config_common.yml /tmp/continue_config.yml
+            else
+              echo "No relevant changes detected. Exiting."
               circleci-agent step halt
             fi
+      - continuation/continue:
+          configuration_path: /tmp/continue_config.yml
+          parameters: '{}'
 
 workflows:
   setup:
     jobs:
       - detect-market
+      - continue-config:
+          requires:
+            - detect-market
