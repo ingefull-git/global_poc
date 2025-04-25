@@ -13,7 +13,6 @@ jobs:
             # Add your docker build/push commands here
 
 workflows:
-  version: 2
   etl:
     jobs:
       - build-and-push-common-image:
