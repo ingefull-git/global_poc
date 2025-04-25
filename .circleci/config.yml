@@ -1,15 +1,53 @@
 version: 2.1
 
+setup: true  # <<< THIS is what enables dynamic config!
+
+orbs:
+  path-filtering: circleci/path-filtering@0.1.2  # optional, can be handy
+
+# Pipeline parameters to pass into continuation
+parameters:
+  build_common:
+    type: boolean
+    default: false
+  build_japan:
+    type: boolean
+    default: false
+
 jobs:
-  echo-global:
+  setup:
     docker:
       - image: cimg/base:stable
     steps:
+      - checkout
       - run:
-          name: Say hello
-          command: echo "✅ This is the GLOBAL pipeline"
+          name: Fetch base branch
+          command: |
+            git fetch origin main
+      - run:
+          name: Detect changed paths
+          command: |
+            CHANGED_FILES=$(git diff --name-only origin/main...HEAD)
+            echo "Changed files: $CHANGED_FILES"
+
+            # Set pipeline parameters
+            if echo "$CHANGED_FILES" | grep -q '^services/common/'; then
+              echo 'export BUILD_COMMON=true' >> $BASH_ENV
+            fi
+
+            if echo "$CHANGED_FILES" | grep -q '^services/japan/'; then
+              echo 'export BUILD_JAPAN=true' >> $BASH_ENV
+            fi
+
+      - run:
+          name: Trigger continuation
+          command: |
+            circleci pipeline continue \
+              --config .circleci/continue-config.yml \
+              --parameter build_common="$BUILD_COMMON" \
+              --parameter build_japan="$BUILD_JAPAN"
 
 workflows:
-  global-workflow:
+  setup-workflow:
     jobs:
-      - echo-global
+      - setup
