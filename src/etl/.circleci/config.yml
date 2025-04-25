@@ -17,8 +17,13 @@ jobs:
             else
               echo "none" > market.txt
             fi
+      - run:
+          name: Prepare workspace directory
+          command: |
+            mkdir -p ~/workspace
+            mv market.txt ~/workspace/
       - persist_to_workspace:
-          root: .
+          root: ~/workspace
           paths:
             - market.txt
 
@@ -28,11 +33,11 @@ jobs:
     working_directory: ~/market_etl
     steps:
       - attach_workspace:
-          at: /workspace
+          at: ~/workspace
       - run:
           name: Read selected market
           command: |
-            MARKET=$(cat /workspace/market.txt)
+            MARKET=$(cat ~/workspace/market.txt)
             echo "Detected market: $MARKET"
             echo "export MARKET=$MARKET" >> $BASH_ENV
       - run:
