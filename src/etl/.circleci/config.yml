@@ -7,10 +7,20 @@ jobs:
     parameters:
       target:
         type: string
+      path_filter:
+        type: string
     steps:
+      - checkout
       - run:
-          name: Simulate image build
-          command: echo "🔧 This is the ETL job for << parameters.target >>"
+          name: Check for file changes under << parameters.path_filter >>
+          command: |
+            echo "Checking if changes affected << parameters.path_filter >>"
+            if git diff --name-only HEAD^ | grep -q "<< parameters.path_filter >>"; then
+              echo "🔧 This is the ETL job for << parameters.target >>"
+            else
+              echo "❌ No relevant changes, skipping << parameters.target >> job"
+              circleci-agent step halt
+            fi
 
 workflows:
   etl-build:
@@ -18,13 +28,9 @@ workflows:
       - echo-image:
           name: echo-common
           target: common
-          filters:
-            branches:
-              only: /.*common.*/
+          path_filter: src/etl/common/
 
       - echo-image:
           name: echo-japan
           target: japan
-          filters:
-            branches:
-              only: /.*japan.*/
+          path_filter: src/etl/japan/
