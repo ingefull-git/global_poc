@@ -9,6 +9,13 @@ jobs:
     steps:
       - checkout
       - run:
+          name: Check if build_common is set
+          command: |
+            if [ "${CIRCLE_PIPELINE_PARAMETERS.build_common}" != "true" ]; then
+              echo "Skipping: build_common is not set."
+              exit 0
+            fi
+      - run:
           name: Build and push common image
           command: |
             echo "Building and pushing common image for tag: common_${CIRCLE_SHA1::7}"
@@ -17,6 +24,13 @@ jobs:
       - image: cimg/python:3.10
     steps:
       - checkout
+      - run:
+          name: Check if build_japan is set
+          command: |
+            if [ "${CIRCLE_PIPELINE_PARAMETERS.build_japan}" != "true" ]; then
+              echo "Skipping: build_japan is not set."
+              exit 0
+            fi
       - run:
           name: Build and push japan image
           command: |
@@ -33,7 +47,5 @@ workflows:
           base-revision: main
   etl:
     jobs:
-      - build-and-push-common-image:
-          when: << pipeline.parameters.build_common >>
-      - build-and-push-japan-image:
-          when: << pipeline.parameters.build_japan >>
+      - build-and-push-common-image
+      - build-and-push-japan-image
