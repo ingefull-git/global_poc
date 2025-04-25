@@ -1,4 +1,8 @@
 version: 2.1
+setup: true
+
+orbs:
+  continuation: circleci/continuation@0.1.2
 
 jobs:
   detect-market:
@@ -11,79 +15,22 @@ jobs:
           command: |
             git fetch origin main --depth=1
             if git diff --name-only origin/main...HEAD | grep -q "src/etl/japan/"; then
-              echo "japan" > market.txt
+              echo 'export MARKET=japan' >> $BASH_ENV
             elif git diff --name-only origin/main...HEAD | grep -q "src/etl/common/"; then
-              echo "common" > market.txt
+              echo 'export MARKET=common' >> $BASH_ENV
             else
-              echo "none" > market.txt
+              echo 'export MARKET=none' >> $BASH_ENV
             fi
       - run:
-          name: Prepare workspace directory
-          command: |
-            mkdir -p ~/workspace
-            mv market.txt ~/workspace/
-      - persist_to_workspace:
-          root: ~/workspace
-          paths:
-            - market.txt
-
-  build-and-push-common-image:
-    docker:
-      - image: cimg/python:3.10
-    working_directory: ~/market_etl
-    steps:
-      - attach_workspace:
-          at: ~/workspace
-      - run:
-          name: Read selected market
-          command: |
-            MARKET=$(cat ~/workspace/market.txt)
-            echo "Detected market: $MARKET"
-            if [ "$MARKET" != "common" ]; then
-              echo "Skipping common image build for market: $MARKET"
-              circleci-agent step halt
-            fi
-            echo "Building common image..."
-            echo "export MARKET=$MARKET" >> $BASH_ENV
-      - run:
-          name: build and push common image
+          name: Save market as pipeline parameter
           command: |
             source $BASH_ENV
-            echo "This is final step, tag : ${MARKET}_${CIRCLE_SHA1::7}" 
-
-  build-and-push-etl-image:
-    docker:
-      - image: cimg/python:3.10
-    working_directory: ~/market_etl
-    steps:
-      - attach_workspace:
-          at: ~/workspace
-      - run:
-          name: Read selected market
-          command: |
-            MARKET=$(cat ~/workspace/market.txt)
-            echo "Detected market: $MARKET"
-            if [ "$MARKET" != "common" ]; then
-              echo "export MARKET=$MARKET" >> $BASH_ENV
-              echo "Building etl image..."
-            else    
-              circleci-agent step halt
-            fi
-      - run:
-          name: build and push etl image
-          command: |
-            source $BASH_ENV
-            echo "This is final step, tag : ${MARKET}_${CIRCLE_SHA1::7}" 
-
+            echo '{"market": "'${MARKET}'"}' > pipeline-params.json
+      - continuation/continue:
+          configuration_path: src/etl/.circleci/continue_config.yml
+          parameters: pipeline-params.json
 
 workflows:
-  version: 2
-  etl:
+  setup:
     jobs:
       - detect-market
-      - build-and-push-common-image:
-          requires:
-            - detect-market
-      - build-and-push-etl-image:
-          requires:
-            - detect-market
