@@ -22,14 +22,30 @@ jobs:
             git fetch origin main --depth=1
             if git diff --name-only origin/main...HEAD | grep -q "src/etl/japan/"; then
               echo 'Detected market: japan'
-              circleci continuation continue -c src/etl/.circleci/continue_config_japan.yml -p '{}'
+              circleci step halt
             elif git diff --name-only origin/main...HEAD | grep -q "src/etl/common/"; then
               echo 'Detected market: common'
-              circleci continuation continue -c src/etl/.circleci/continue_config_common.yml -p '{}'
+              circleci step halt
             else
               echo 'No relevant changes detected. Exiting.'
               circleci-agent step halt
             fi
+      - when:
+          condition:
+            and:
+              - << pipeline.parameters.detected_market >> == "japan"
+          steps:
+            - continuation/continue:
+                configuration_path: src/etl/.circleci/continue_config_japan.yml
+                parameters: '{}'
+      - when:
+          condition:
+            and:
+              - << pipeline.parameters.detected_market >> == "common"
+          steps:
+            - continuation/continue:
+                configuration_path: src/etl/.circleci/continue_config_common.yml
+                parameters: '{}'
 
 workflows:
   setup:
