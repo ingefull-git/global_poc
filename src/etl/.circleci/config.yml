@@ -16,6 +16,7 @@ jobs:
               echo "common" > market.txt
             else
               echo "none" > market.txt
+            fi
       - persist_to_workspace:
           root: .
           paths:
