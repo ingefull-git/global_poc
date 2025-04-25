@@ -9,9 +9,10 @@ jobs:
       - run:
           name: Detect updated market path
           command: |
-            if git diff --name-only HEAD^ | grep -q "src/etl/japan/"; then
+            git fetch origin main --depth=1
+            if git diff --name-only origin/main...HEAD | grep -q "src/etl/japan/"; then
               echo "japan" > market.txt
-            elif git diff --name-only HEAD^ | grep -q "src/etl/common/"; then
+            elif git diff --name-only origin/main...HEAD | grep -q "src/etl/common/"; then
               echo "common" > market.txt
             else
               echo "none" > market.txt
