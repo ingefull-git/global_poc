@@ -1,47 +1,78 @@
 version: 2.1
-orbs:
-  path-filtering: circleci/path-filtering@0.1.5
 
+# Define the dynamic pipeline parameters
+parameters:
+  build_common:
+    type: string
+    default: "false"
+  build_japan:
+    type: string
+    default: "false"
+
+# JOBS
 jobs:
+  check-paths:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+      - run:
+          name: Fetch base branch
+          command: |
+            git fetch origin main
+
+      - run:
+          name: Detect changed paths
+          command: |
+            echo "Checking changed files against main branch..."
+            CHANGED_FILES=$(git diff --name-only origin/main...HEAD)
+
+            echo "Changed files:"
+            echo "$CHANGED_FILES"
+
+            if echo "$CHANGED_FILES" | grep -q '^services/common/'; then
+              echo 'export BUILD_COMMON="true"' >> $BASH_ENV
+            fi
+
+            if echo "$CHANGED_FILES" | grep -q '^services/japan/'; then
+              echo 'export BUILD_JAPAN="true"' >> $BASH_ENV
+            fi
+
   build-and-push-common-image:
     docker:
-      - image: cimg/python:3.10
+      - image: cimg/base:stable
     steps:
       - checkout
       - run:
-          name: Check if build_common is set
-          command: |
-            if [ "${CIRCLE_PIPELINE_PARAMETERS.build_common}" != "true" ]; then
-              echo "Skipping: build_common is not set."
-              exit 0
-            fi
-      - run:
-          name: Build and push common image
-          command: |
-            echo "Building and pushing common image for tag: common_${CIRCLE_SHA1::7}"
+          name: Build and Push Common Image
+          command: echo "Building and pushing Common Service image..."
+
   build-and-push-japan-image:
     docker:
-      - image: cimg/python:3.10
+      - image: cimg/base:stable
     steps:
       - checkout
       - run:
-          name: Check if build_japan is set
-          command: |
-            if [ "${CIRCLE_PIPELINE_PARAMETERS.build_japan}" != "true" ]; then
-              echo "Skipping: build_japan is not set."
-              exit 0
-            fi
-      - run:
-          name: Build and push japan image
-          command: |
-            echo "Building and pushing japan image for tag: japan_${CIRCLE_SHA1::7}"
+          name: Build and Push Japan Image
+          command: echo "Building and pushing Japan Service image..."
 
+# WORKFLOWS
 workflows:
-  filter-changes:
+  version: 2
+  build:
     jobs:
-      - path-filtering/filter:
-          name: check-changes
-          mapping: |
-            src/etl/common/.* build_common true
-            src/etl/japan/.* build_japan true
-          base-revision: main
+      - check-paths
+
+      - build-and-push-common-image:
+          requires:
+            - check-paths
+          when:
+            condition:
+              equal: ["true", << pipeline.parameters.build_common >>]
+
+      - build-and-push-japan-image:
+          requires:
+            - check-paths
+          when:
+            condition:
+              equal: ["true", << pipeline.parameters.build_japan >>]
