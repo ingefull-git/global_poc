@@ -25,6 +25,7 @@ jobs:
               echo "market=common" >> /tmp/parameters.txt
             else
               echo "market=none" >> /tmp/parameters.txt
+            fi
       - persist_to_workspace:
           root: /tmp
           paths:
