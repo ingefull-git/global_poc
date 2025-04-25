@@ -1,0 +1,30 @@
+version: 2.1
+
+jobs:
+  echo-image:
+    docker:
+      - image: cimg/python:3.10
+    parameters:
+      target:
+        type: string
+    steps:
+      - run:
+          name: Simulate image build
+          command: echo "🔧 This is the ETL job for << parameters.target >>"
+
+workflows:
+  etl-build:
+    jobs:
+      - echo-image:
+          name: echo-common
+          target: common
+          filters:
+            branches:
+              only: /.*common.*/
+
+      - echo-image:
+          name: echo-japan
+          target: japan
+          filters:
+            branches:
+              only: /.*japan.*/
