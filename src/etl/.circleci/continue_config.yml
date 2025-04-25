@@ -1,4 +1,6 @@
 version: 2.1
+orbs:
+  path-filtering: circleci/path-filtering@0.1.3
 
 jobs:
   build-and-push-common-image:
@@ -25,11 +27,23 @@ jobs:
 workflows:
   etl:
     jobs:
+      - path-filtering/filter:
+          name: check-changes
+          mapping: |
+            src/etl/common/.* build_common true
+            src/etl/japan/.* build_japan true
+          base-revision: main
       - build-and-push-common-image:
+          requires:
+            - check-changes
           filters:
-            paths:
-              - src/etl/common/**
+            branches:
+              only: /.*/
+          when: << pipeline.parameters.build_common >>
       - build-and-push-japan-image:
+          requires:
+            - check-changes
           filters:
-            paths:
-              - src/etl/japan/**
+            branches:
+              only: /.*/
+          when: << pipeline.parameters.build_japan >>
