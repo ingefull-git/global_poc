@@ -45,7 +45,3 @@ workflows:
             src/etl/common/.* build_common true
             src/etl/japan/.* build_japan true
           base-revision: main
-  etl:
-    jobs:
-      - build-and-push-common-image
-      - build-and-push-japan-image
