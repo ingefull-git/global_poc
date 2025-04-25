@@ -1,8 +1,5 @@
 version: 2.1
 
-orbs:
-  path-filtering: circleci/path-filtering@1.2.0  # Official CircleCI path-filtering orb
-
 parameters:
   build_common:
     type: boolean
@@ -12,23 +9,29 @@ parameters:
     default: false
 
 jobs:
-  build-and-push-common-image:
+  say-hello-common:
     docker:
       - image: cimg/base:stable
     steps:
-      - checkout
-      - run: echo "Building and pushing COMMON service image..."
+      - run:
+          name: Print Common Service Message
+          command: echo "Hello from Common Service!"
 
-  build-and-push-japan-image:
+  say-hello-japan:
     docker:
       - image: cimg/base:stable
     steps:
-      - checkout
-      - run: echo "Building and pushing JAPAN service image..."
+      - run:
+          name: Print Japan Service Message
+          command: echo "Hello from Japan Service!"
 
 workflows:
-  build-and-push-common-image:
-      when: << pipeline.parameters.build_common >>
-          
-  build-and-push-japan-image:
-      when: << pipeline.parameters.build_japan >>
+  service-common:
+    when: << pipeline.parameters.build_common >>
+    jobs:
+      - say-hello-common
+
+  service-japan:
+    when: << pipeline.parameters.build_japan >>
+    jobs:
+      - say-hello-japan
