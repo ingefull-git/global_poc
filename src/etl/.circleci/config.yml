@@ -42,9 +42,9 @@ jobs:
             source /tmp/parameters.txt
             echo "Detected market: $market"
             if [ "$market" = "japan" ]; then
-              cp /home/rulo/WSLDocs/Dev/global_poc/src/etl/.circleci/continue_config_japan.yml /tmp/continue_config.yml
+              cp src/etl/.circleci/continue_config_japan.yml /tmp/continue_config.yml
             elif [ "$market" = "common" ]; then
-              cp /home/rulo/WSLDocs/Dev/global_poc/src/etl/.circleci/continue_config_common.yml /tmp/continue_config.yml
+              cp src/etl/.circleci/continue_config_common.yml /tmp/continue_config.yml
             else
               echo "No relevant changes detected. Exiting."
               circleci-agent step halt
