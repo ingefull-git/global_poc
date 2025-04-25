@@ -15,4 +15,4 @@ jobs:
 workflows:
   etl:
     jobs:
-      - build-and-push-common-image:
+      - build-and-push-common-image
