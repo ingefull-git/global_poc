@@ -27,14 +27,8 @@ jobs:
       - run: echo "Building and pushing JAPAN service image..."
 
 workflows:
-  version: 2
-  build-services:
-    jobs:
-      - build-and-push-common-image:
-          when:
-            condition:
-              equal: [true, << pipeline.parameters.build_common >>]
-      - build-and-push-japan-image:
-          when:
-            condition:
-              equal: [true, << pipeline.parameters.build_japan >>]
+  build-and-push-common-image:
+      when: << pipeline.parameters.build_common >>
+          
+  build-and-push-japan-image:
+      when: << pipeline.parameters.build_japan >>
