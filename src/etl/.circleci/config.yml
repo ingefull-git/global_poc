@@ -1,36 +1,49 @@
 version: 2.1
 
 jobs:
-  echo-image:
+  detect-market:
     docker:
       - image: cimg/python:3.10
-    parameters:
-      target:
-        type: string
-      path_filter:
-        type: string
     steps:
       - checkout
       - run:
-          name: Check for file changes under << parameters.path_filter >>
+          name: Detect updated market path
           command: |
-            echo "Checking if changes affected << parameters.path_filter >>"
-            if git diff --name-only HEAD^ | grep -q "<< parameters.path_filter >>"; then
-              echo "🔧 This is the ETL job for << parameters.target >>"
+            if git diff --name-only HEAD^ | grep -q "src/etl/japan/"; then
+              echo "japan" > market.txt
+            elif git diff --name-only HEAD^ | grep -q "src/etl/common/"; then
+              echo "common" > market.txt
             else
-              echo "❌ No relevant changes, skipping << parameters.target >> job"
-              circleci-agent step halt
-            fi
+              echo "none" > market.txt
+      - persist_to_workspace:
+          root: .
+          paths:
+            - market.txt
+
+  build-and-push-etl-image:
+    docker:
+      - image: cimg/python:3.9-slim
+    working_directory: ~/market_etl
+    steps:
+      - attach_workspace:
+          at: /workspace
+      - run:
+          name: Read selected market
+          command: |
+            MARKET=$(cat /workspace/market.txt)
+            echo "Detected market: $MARKET"
+            echo "export MARKET=$MARKET" >> $BASH_ENV
+      - run:
+          name: setup operations-0 aws credentials
+          command: |
+            echo "This is final step, tag : $MARKET_${CIRCLE_SHA1::7}" 
+
 
 workflows:
-  etl-build:
+  version: 2
+  etl:
     jobs:
-      - echo-image:
-          name: echo-common
-          target: common
-          path_filter: src/etl/common/
-
-      - echo-image:
-          name: echo-japan
-          target: japan
-          path_filter: src/etl/japan/
+      - detect-market
+      - build-and-push-etl-image:
+          requires:
+            - detect-market
