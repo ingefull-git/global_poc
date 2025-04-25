@@ -31,7 +31,7 @@ workflows:
             src/etl/common/.* build_common true
             src/etl/japan/.* build_japan true
           base-revision: main
-          trigger: true
+          trigger-pipeline: true
   etl:
     when: << pipeline.parameters.build_common >> or << pipeline.parameters.build_japan >>
     jobs:
