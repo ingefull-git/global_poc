@@ -11,30 +11,18 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Detect updated market path
+          name: Detect updated market path and continue
           command: |
             git fetch origin main --depth=1
             if git diff --name-only origin/main...HEAD | grep -q "src/etl/japan/"; then
-              echo 'japan' > market.txt
+              echo 'Detected market: japan'
+              circleci continuation continue -c src/etl/.circleci/continue_config_japan.yml -p '{}'
             elif git diff --name-only origin/main...HEAD | grep -q "src/etl/common/"; then
-              echo 'common' > market.txt
-            else
-              echo 'none' > market.txt
-      - run:
-          name: Select continuation config
-          command: |
-            MARKET=$(cat market.txt)
-            if [ "$MARKET" = "common" ]; then
-              echo '{"config_path": "src/etl/.circleci/continue_config_common.yml"}' > continuation-params.json
-            elif [ "$MARKET" = "japan" ]; then
-              echo '{"config_path": "src/etl/.circleci/continue_config_japan.yml"}' > continuation-params.json
+              echo 'Detected market: common'
+              circleci continuation continue -c src/etl/.circleci/continue_config_common.yml -p '{}'
             else
               echo 'No relevant changes detected. Exiting.'
               circleci-agent step halt
-            fi
-      - continuation/continue:
-          configuration_path: << pipeline.parameters.config_path >>
-          parameters: {}
 
 workflows:
   setup:
