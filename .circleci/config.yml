@@ -3,7 +3,7 @@ version: 2.1
 setup: true  # Dynamic Config enabled
 
 orbs:
-  path-filtering: circleci/path-filtering@0.1.2  # Official CircleCI path-filtering orb
+  path-filtering: circleci/path-filtering@0.1.6  # Official CircleCI path-filtering orb
 
 # Define parameters that will be passed after path-filtering
 parameters:
