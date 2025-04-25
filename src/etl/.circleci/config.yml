@@ -24,7 +24,7 @@ jobs:
 
   build-and-push-etl-image:
     docker:
-      - image: cimg/python:3.9-slim
+      - image: cimg/python:3.10
     working_directory: ~/market_etl
     steps:
       - attach_workspace:
