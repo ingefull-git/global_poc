@@ -22,5 +22,5 @@ workflows:
           base-revision: main
           config-path: .circleci/migrations-config.yml
           mapping: |
-            src/db_migrations/forecast/.* build_forecast true
-            src/db_migrations/japan/.* build_japan true
+            db_migrations/forecast/.* build_forecast true
+            db_migrations/japan/.* build_japan true
