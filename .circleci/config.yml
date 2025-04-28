@@ -72,8 +72,6 @@ workflows:
       - migration-changes
 
   service-forecast:
-    requires:
-      - migration-changes
     when:
       condition:
         equal: ["true", << pipeline.parameters.migrate_forecast >>]
@@ -81,8 +79,6 @@ workflows:
       - migrations-forecast
 
   service-japan:
-    requires:
-      - migration-changes
     when:
       condition:
         equal: ["true", << pipeline.parameters.migrate_japan >>]
