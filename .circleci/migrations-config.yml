@@ -44,13 +44,11 @@ workflows:
   main-workflow:
     jobs:
       - migration-changes
-
-  service-forecast:
-    when: << pipeline.parameters.migrate_forecast >>
-    jobs:
-      - migrations-forecast
-
-  service-japan:
-    when: << pipeline.parameters.migrate_japan >>
-    jobs:
-      - migrations-japan
+      - migrations-forecast:
+          requires:
+            - migration-changes
+          when: << pipeline.parameters.migrate_forecast >>
+      - migrations-japan:
+          requires:
+            - migration-changes
+          when: << pipeline.parameters.migrate_japan >>
