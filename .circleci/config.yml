@@ -73,6 +73,7 @@ jobs:
 workflows:
   main-workflow:
     jobs:
+      - migration-changes
       - path-filtering/filter:
           name: migrate-changes
           base-revision: main
