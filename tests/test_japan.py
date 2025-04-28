@@ -1,3 +1,5 @@
+import time
+
 import psycopg2
 import pytest
 
@@ -11,16 +13,23 @@ EXPECTED_SCHEMA = {
 
 @pytest.fixture(scope="module")
 def db_connection():
-    """Fixture to connect to the test database."""
-    conn = psycopg2.connect(
-        dbname="test_db",
-        user="test_user",
-        password="test_pass",
-        host="localhost",
-        port=5432,
-    )
-    yield conn
-    conn.close()
+    """Fixture to connect to the test database with retries."""
+    for _ in range(10):  # Retry up to 10 times
+        try:
+            conn = psycopg2.connect(
+                dbname="test_db",
+                user="test_user",
+                password="test_pass",
+                host="postgres",
+                port=5432,
+            )
+            yield conn
+            conn.close()
+            return
+        except psycopg2.OperationalError:
+            print("Waiting for the database to be ready...")
+            time.sleep(3)
+    pytest.fail("Could not connect to the database after multiple retries.")
 
 
 def test_japan_schema(db_connection):
