@@ -9,21 +9,21 @@ parameters:
     default: false
 
 jobs:
-  say-hello-forecast:
+  migrations-forecast:
     docker:
       - image: cimg/base:stable
     steps:
       - run:
           name: Print forecast Service Message
-          command: echo "Hello from forecast Service!"
+          command: echo "Hello from forecast migrations!"
 
-  say-hello-japan:
+  migrations-japan:
     docker:
       - image: cimg/base:stable
     steps:
       - run:
           name: Print Japan Service Message
-          command: echo "Hello from Japan Service!"
+          command: echo "Hello from Japan migrations!"
 
 workflows:
   service-forecast:
