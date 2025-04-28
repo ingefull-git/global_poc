@@ -27,6 +27,7 @@ jobs:
             echo "migrate_forecast: << pipeline.parameters.migrate_forecast >>"
             echo "migrate_japan: << pipeline.parameters.migrate_japan >>"
             echo '{"migration_steps": true}' > /tmp/pipeline-parameters.json
+            sleep 3
 
   migrations-forecast:
     docker:
