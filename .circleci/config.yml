@@ -1,15 +1,26 @@
 version: 2.1
 
-jobs:
-  echo-global:
-    docker:
-      - image: cimg/base:stable
-    steps:
-      - run:
-          name: Say hello
-          command: echo "✅ This is the GLOBAL pipeline"
+setup: true
+
+orbs:
+  path-filtering: circleci/path-filtering@1.3.0  # Official CircleCI path-filtering orb
+
+# Define parameters that will be passed after path-filtering
+parameters:
+  build_forecast:
+    type: boolean
+    default: false
+  build_japan:
+    type: boolean
+    default: false
 
 workflows:
-  global-workflow:
+  setup-workflow:
     jobs:
-      - echo-global
+      - path-filtering/filter:
+          name: migration-changes
+          base-revision: main
+          config-path: .circleci/migrations-config.yml
+          mapping: |
+            db_migrations/forecast/.* build_forecast true
+            db_migrations/japan/.* build_japan true

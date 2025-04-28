@@ -1,0 +1,37 @@
+version: 2.1
+
+parameters:
+  build_common:
+    type: boolean
+    default: false
+  build_japan:
+    type: boolean
+    default: false
+
+jobs:
+  say-hello-common:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run:
+          name: Print Common Service Message
+          command: echo "Hello from Common Service!"
+
+  say-hello-japan:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run:
+          name: Print Japan Service Message
+          command: echo "Hello from Japan Service!"
+
+workflows:
+  service-common:
+    when: << pipeline.parameters.build_common >>
+    jobs:
+      - say-hello-common
+
+  service-japan:
+    when: << pipeline.parameters.build_japan >>
+    jobs:
+      - say-hello-japan

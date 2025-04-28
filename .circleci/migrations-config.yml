@@ -1,0 +1,37 @@
+version: 2.1
+
+parameters:
+  build_forecast:
+    type: boolean
+    default: false
+  build_japan:
+    type: boolean
+    default: false
+
+jobs:
+  migrations-forecast:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run:
+          name: Print forecast Service Message
+          command: echo "Hello from forecast migrations!"
+
+  migrations-japan:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run:
+          name: Print Japan Service Message
+          command: echo "Hello from Japan migrations!"
+
+workflows:
+  service-forecast:
+    when: << pipeline.parameters.build_forecast >>
+    jobs:
+      - migrations-forecast
+
+  service-japan:
+    when: << pipeline.parameters.build_japan >>
+    jobs:
+      - migrations-japan

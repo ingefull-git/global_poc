@@ -1,0 +1,476 @@
+version: 2.1
+
+orbs:
+  python: circleci/python@3.1.0 # https://circleci.com/developer/orbs/orb/circleci/python
+  aws-ecr: circleci/aws-ecr@9.0 # https://circleci.com/developer/orbs/orb/circleci/aws-ecr
+  aws-cli: circleci/aws-cli@4.1
+
+references:
+  workspace_root: &workspace_root
+    /tmp/workspace
+  attach_workspace: &attach_workspace
+    attach_workspace:
+      at: *workspace_root
+
+jobs:
+  threatrix_scan:
+    docker:
+      - image: circleci/openjdk:11-jdk-node
+    working_directory: ~/repo
+    environment:
+      MAVEN_OPTS: -Xmx3200m
+    steps:
+      - *attach_workspace
+      - checkout
+      - run:
+          command: |
+            find . -name "requirements.txt" | xargs cat > requirements-all.txt
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "requirements-all.txt" }}
+            # fallback to using the latest cache if no exact match is found
+            - v1-dependencies-
+      - run:
+          name: Set up Maven .m2 directory and settings.xml for repository access
+          command: |
+            mkdir -p ~/.m2
+            wget -O ~/.m2/settings.xml https://fluence-threatrix.s3.amazonaws.com/artifactory_templates/settings.xml.artifactory_template
+      - run:
+          name: Evaluate Maven Dependencies if necessary
+          command: |
+            [[ ! -f pom.xml ]] && echo "no pom.xml present" || mvn -f pom.xml dependency:go-offline -Dmaven.test.skip=true -DARTIFACTORY_USERNAME=${ARTIFACTORY_USERNAME} -DARTIFACTORY_PASSWORD=${ARTIFACTORY_PASSWORD}
+      - save_cache:
+          paths:
+            - ~/.m2
+          key: v1-dependencies-{{ checksum "requirements-all.txt" }}
+      - run:
+          name: Install Threatrix ThreatAgent & Scan
+          command: |
+            curl -L ${THREATRIX_AGENT_URL} > /tmp/threatagent.jar
+            java -jar /tmp/threatagent.jar --progress ./
+
+  build_test_save:
+    docker:
+      - image: cimg/python:3.9
+    working_directory: ~/japan
+    steps:
+      - checkout:
+          path: ~/japan
+      - run:
+          name: Set up Artifactory pip
+          command: |
+            sed -i "s|{{USERNAME}}:{{PASSWORD}}|${ARTIFACTORY_USERNAME}:${ARTIFACTORY_PASSWORD}|g" pip.conf
+            mkdir -p /home/circleci/.config/pip
+            cp pip.conf /home/circleci/.config/pip/pip.conf
+      - run:
+          name: Save git metadata
+          command: |
+            echo "export DD_GIT_BRANCH=${CIRCLE_BRANCH}" >> metadata.env
+            echo "export DD_GIT_COMMIT_SHA=${CIRCLE_SHA1}" >> metadata.env
+            echo "export DD_GIT_REPOSITORY_URL=${CIRCLE_REPOSITORY_URL}" >> metadata.env
+            echo "export DD_GIT_TAG=${CIRCLE_BRANCH}_${CIRCLE_SHA1}" >> metadata.env
+            git log --format='export DD_GIT_COMMIT_AUTHOR_DATE="%aD"' -n 1 >> metadata.env
+            git log --format='export DD_GIT_COMMIT_AUTHOR_EMAIL="%ae"' -n 1 >> metadata.env
+            git log --format='export DD_GIT_COMMIT_AUTHOR_NAME="%an"' -n 1 >> metadata.env
+            git log --format='export DD_GIT_COMMIT_COMMITTER_DATE="%cD"' -n 1 >> metadata.env
+            git log --format='export DD_GIT_COMMIT_COMMITTER_EMAIL="%ce"' -n 1 >> metadata.env
+            git log --format='export DD_GIT_COMMIT_COMMITTER_NAME="%cn"' -n 1 >> metadata.env
+            git log --format='export DD_GIT_COMMIT_MESSAGE="%s"' -n 1 >> metadata.env
+      - run:
+          name: Hack requirements.txt file
+          command: cat requirements.txt requirements-build.txt requirements-pyapi.txt > requirements-all.txt
+      - restore_cache:
+          name: Restore pip Package Cache
+          key: pip-env-{{ checksum "requirements.txt" }}-{{ checksum "requirements-build.txt" }}-{{ checksum "requirements-pyapi.txt" }}
+      - run:
+          name: Remove pip packages
+          command: rm -rf /home/circleci/japan/pip-cache
+      - run:
+          name: Install pip packages
+          command: |
+            if [[ ! -d pip-cache ]]; then
+              python -m venv pip-cache
+              source pip-cache/bin/activate
+              pip install --upgrade pip
+              pip install -r requirements-all.txt
+            else
+              echo "restored packages from cache"
+            fi
+      - run:
+          name: Black
+          command: |
+            source pip-cache/bin/activate
+            black --check --config ~/japan/pyproject.toml ~/japan/src
+      - run:
+          name: Flake8
+          command: |
+            source pip-cache/bin/activate
+            flake8 --config ~/japan/.flake8 ~/japan/src
+      - run:
+          name: MyPy
+          command: |
+            source pip-cache/bin/activate
+            mypy --config-file ~/japan/mypy.ini ~/japan/src
+      - run:
+          name: iSort
+          command: |
+            source pip-cache/bin/activate
+            isort --settings-path ~/japan/pyproject.toml ~/japan/src/pyapi
+      - python/dist:
+          app-dir: "."
+      - run:
+          name: Move distribution files into jobs/ for use in Docker
+          command: |
+            cp -r dist/* jobs/
+            cp pip.conf jobs/
+      - run:
+          name: Unit tests and coverage report
+          command: |
+            set -e
+            export PYTHONPATH=$(pwd)/japan
+            source pip-cache/bin/activate
+            coverage run -m pytest -v --junitxml=results.xml --ignore=tests/localstack/ --ignore=tests/japan/ --ignore=tests/optimization/ --ignore=tests/utils/ --ignore=tests/component/
+            coverage report
+            coverage xml
+            # Capture coverage summary
+            coverage report
+      - save_cache:
+          name: Save pip Package Cache
+          key: pip-env-{{ checksum "requirements.txt" }}-{{ checksum "requirements-build.txt" }}-{{ checksum "requirements-pyapi.txt" }}
+          paths:
+            - pip-cache
+      - store_artifacts:
+          path: jobs/dist
+      - store_artifacts:
+          path: ~/japan/coverage.xml
+      - store_test_results:
+          path: ~/japan/results.xml
+      - persist_to_workspace:
+          root: "."
+          paths:
+            - "lambda/*"
+            - "jobs/*"
+            - "metadata.env"
+      - persist_to_workspace:
+          root: "."
+          paths:
+            - "*"
+            - "japan/etl/configs/*"
+            - "japan/optimization/configs/*"
+            - "japan/schema/*"
+            - "*.xml"
+
+  push_test_results:
+    docker:
+      - image: ${AWS_ACCOUNT_ID}.dkr.ecr.us-west-2.amazonaws.com/datadog-ci:latest-release
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: .
+      - run:
+          name: Push test results to datadog
+          command: |
+            source metadata.env
+            /usr/local/bin/datadog-ci junit upload --service ${CIRCLE_PROJECT_REPONAME} ~/project/results.xml
+          environment:
+            DATADOG_SITE: datadoghq.com
+            DD_ENV: ci
+
+  notify:
+    docker:
+      - image: cimg/base:stable
+    resource_class: small
+    steps:
+      - run:
+          name: post-to-slack
+          command: |
+            curl -XPOST -H "Content-Type: application/json" -d "{'text': '${CIRCLE_PROJECT_REPONAME}: ${CIRCLE_BRANCH}: new build ready \`@Bula App j-dev-deploy ${CIRCLE_BRANCH}_${CIRCLE_WORKFLOW_ID::5}_${CIRCLE_SHA1::7} <environment> [ <component>* ]\`'}" ${SLACK_URL}
+
+  docker-compose-build:
+    machine:
+      image: ubuntu-2204:2024.01.1
+    working_directory: ~/japan
+    steps:
+      - checkout:
+          path: ~/japan
+      - run:
+          name: Set up Artifactory pip
+          command: |
+            sed -i "s|{{USERNAME}}:{{PASSWORD}}|${ARTIFACTORY_USERNAME}:${ARTIFACTORY_PASSWORD}|g" pip.conf
+      - run:
+          name: Build docker-compose local development harness and run tests
+          command: |
+            docker compose up -d --wait
+            docker exec -it fd_japan bash -c $"echo \"CREATE ROLE mosaic WITH superuser LOGIN\" | psql -h localhost -U postgres -d model -p 5432"
+            docker exec -it fd_japan bash -c $"echo \"CREATE SCHEMA IF NOT EXISTS japan\" | psql -h localhost -U postgres -d model -p 5432"
+            docker exec -it fd_japan bash -c $"echo \"GRANT USAGE, CREATE ON SCHEMA japan TO PUBLIC\" | psql -h localhost -U postgres -d model -p 5432"
+            docker exec -it pyapi_japan bash -c "cd /src/db_migration/platform ; sqitch deploy -h localhost -u postgres -d model -p 5432"
+            docker exec -it fd_japan bash -c "cd /src/db_migration/japan ; sqitch deploy -h localhost -u postgres -d model -p 5432"
+            docker exec -it fd_japan bash -c "cd /src && pytest -v"
+            docker exec -it pyapi_japan bash -c "cd /src/db_migration/core ; sqitch deploy -h localhost -u postgres -d model -p 5432";
+            docker exec -it pyapi_japan bash -c "cd /src/db_migration/scenario ; sqitch deploy -h localhost -u postgres -d model -p 5432";
+            docker exec -it pyapi_japan bash -c "cd /src/db_migration/forecast ; sqitch deploy -h localhost -u postgres -d model -p 5432";
+            docker exec -it pyapi_japan bash -c "cd /src/src && export PYTHONPATH=$PYTHONPATH:/src:/src/src/pyapi && coverage run --omit="*test*","etl/*" -m pytest -v /src/tests/unit/pyapi /src/tests/component/pyapi && coverage report"
+  build-and-push-schema-image:
+    executor: aws-ecr/default
+    working_directory: ~/japan
+    parameters:
+      push_account:
+        type: string
+    steps:
+      - aws-ecr/build_and_push_image:
+          account_id: << parameters.push_account >>
+          region: ${AWS_REGION}
+          auth:
+            - aws-ecr/ecr_login:
+                account_id: << parameters.push_account >>
+                region: ${AWS_REGION}
+          attach_workspace: true
+          checkout: true
+          dockerfile: sqitch.Dockerfile
+          path: db_migration/cicd
+          extra_build_args: "--build-arg GIT_BRANCH=${CIRCLE_BRANCH} --build-arg GIT_REV=${CIRCLE_SHA1::7} --build-arg DD_VERSION=${CIRCLE_BRANCH}:${CIRCLE_SHA1::7}"
+          repo: japan/schema
+          tag: ${CIRCLE_SHA1::7},${CIRCLE_BRANCH}_${CIRCLE_WORKFLOW_ID::5}_${CIRCLE_SHA1::7}
+
+  build-and-push-etl-image:
+    docker:
+      - image: cimg/python:3.9
+    working_directory: ~/japan
+    steps:
+      - attach_workspace:
+          at: .
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - aws-cli/setup:
+          region: ${AWS_REGION}
+      - aws-ecr/ecr_login:
+          account_id: "876270261134"
+      - aws-ecr/build_image:
+          account_id: "697519554137"
+          extra_build_args: "--provenance=false --build-arg GIT_BRANCH=${CIRCLE_BRANCH} --build-arg GIT_REV=${CIRCLE_SHA1::7} --build-arg DD_VERSION=${CIRCLE_BRANCH}:${CIRCLE_SHA1::7} --build-arg AWS_ACCOUNT=${AWS_ACCOUNT} --build-arg AWS_ACCOUNT_ID=${AWS_ACCOUNT_ID} --build-arg ARTIFACTORY_USERNAME=${ARTIFACTORY_USERNAME} --build-arg ARTIFACTORY_PASSWORD=${ARTIFACTORY_PASSWORD}"
+          build_path: jobs
+          path: jobs
+          repo: japan/etl
+          tag: ${CIRCLE_SHA1::7},${CIRCLE_BRANCH}_${CIRCLE_WORKFLOW_ID::5}_${CIRCLE_SHA1::7}
+          push_image: false
+      - run:
+          name: setup operations-0 aws credentials
+          command: |
+            echo "export AWS_ACCESS_KEY_ID=${aws_circleci_operations_id}" >> $BASH_ENV
+            echo "export AWS_SECRET_ACCESS_KEY=${aws_circleci_operations_key}" >> $BASH_ENV
+            echo "export AWS_ACCOUNT_ID=${aws_circleci_operations_account_id}" >> $BASH_ENV
+            echo "export AWS_REGION=${aws_region}" >> $BASH_ENV
+      - aws-ecr/ecr_login:
+          account_id: "697519554137"
+      - aws-ecr/push_image:
+          account_id: "697519554137"
+          repo: japan/etl
+          tag: ${CIRCLE_SHA1::7},${CIRCLE_BRANCH}_${CIRCLE_WORKFLOW_ID::5}_${CIRCLE_SHA1::7}
+
+  build-and-push-pyapi-image:
+    executor: aws-ecr/default
+    working_directory: ~/japan
+    parameters:
+      push_account:
+        type: string
+    steps:
+      - checkout:
+          path: ~/japan
+      - run:
+          name: update pip.conf
+          command: |
+            sed "s|{{USERNAME}}:{{PASSWORD}}|${ARTIFACTORY_USERNAME}:${ARTIFACTORY_PASSWORD}|g" pip.conf > ./pip.conf
+      - aws-ecr/build_and_push_image:
+          account_id: << parameters.push_account >>
+          region: ${AWS_REGION}
+          auth:
+            - aws-ecr/ecr_login:
+                account_id: << parameters.push_account >>
+                region: ${AWS_REGION}
+          attach_workspace: true
+          extra_build_args: --build-arg VERSION=${CIRCLE_SHA1::7}
+          checkout: true
+          dockerfile: pyapi.k8s.Dockerfile
+          path: .
+          repo: japan/pyapi
+          tag: ${CIRCLE_SHA1::7},${CIRCLE_BRANCH}_${CIRCLE_WORKFLOW_ID::5}_${CIRCLE_SHA1::7}
+
+  build-and-push-lambda-image:
+    executor: aws-ecr/default
+    working_directory: ~/japan
+    parameters:
+      push_account:
+        type: string
+    steps:
+      - checkout:
+          path: ~/japan
+      - run:
+          name: update pip.conf
+          command: |
+            mkdir ~/.pip
+            sed "s|{{USERNAME}}:{{PASSWORD}}|${ARTIFACTORY_USERNAME}:${ARTIFACTORY_PASSWORD}|g" pip.conf > ~/.pip/pip.conf
+      - run:
+          name: Build japan package
+          command: |
+            pip install build
+            python -m build --wheel
+            cp dist/japan-0.2.0-py3-none-any.whl lambda/japan-0.2.0-py3-none-any.whl
+      - run:
+          name: Authenticate Docker to ECR
+          command: |
+            aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin 876270261134.dkr.ecr.us-west-2.amazonaws.com
+      - aws-ecr/build_and_push_image:
+          account_id: << parameters.push_account >>
+          region: ${AWS_REGION}
+          auth:
+            - aws-ecr/ecr_login:
+                account_id: << parameters.push_account >>
+                region: ${AWS_REGION}
+          attach_workspace: true
+          extra_build_args: "--provenance=false --build-arg VERSION=${CIRCLE_SHA1::7} --secret id=pip.conf,src=$HOME/.pip/pip.conf"
+          dockerfile: Dockerfile
+          build_path: ./lambda
+          path: ./lambda
+          repo: japan/lambda
+          tag: ${CIRCLE_SHA1::7},${CIRCLE_BRANCH}_${CIRCLE_WORKFLOW_ID::5}_${CIRCLE_SHA1::7}
+
+  build-and-push-forecast-jobs-image:
+    executor: aws-ecr/default
+    working_directory: ~/japan
+    parameters:
+      push_account:
+        type: string
+    steps:
+      - checkout:
+          path: ~/japan
+      - run:
+          name: update pip.conf
+          command: |
+            mkdir ~/.pip
+            sed "s|{{USERNAME}}:{{PASSWORD}}|${ARTIFACTORY_USERNAME}:${ARTIFACTORY_PASSWORD}|g" pip.conf > ~/.pip/pip.conf
+      - run:
+          name: Build japan package
+          command: |
+            pip install build
+            python -m build --wheel
+            cp dist/japan-0.2.0-py3-none-any.whl jobs/japan-0.2.0-py3-none-any.whl
+      - run:
+          name: Authenticate Docker to ECR
+          command: |
+            aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin 876270261134.dkr.ecr.us-west-2.amazonaws.com
+      - aws-ecr/build_and_push_image:
+          account_id: << parameters.push_account >>
+          region: ${AWS_REGION}
+          auth:
+            - aws-ecr/ecr_login:
+                account_id: << parameters.push_account >>
+                region: ${AWS_REGION}
+          attach_workspace: true
+          extra_build_args: "--provenance=false --build-arg VERSION=${CIRCLE_SHA1::7} --secret id=pip.conf,src=$HOME/.pip/pip.conf"
+          dockerfile: forecast.Dockerfile
+          build_path: ./jobs
+          path: ./jobs
+          repo: japan/etl
+          tag: forecast-${CIRCLE_SHA1::7},forecast-${CIRCLE_BRANCH}_${CIRCLE_WORKFLOW_ID::5}_${CIRCLE_SHA1::7} # not overwrite any other image
+
+
+
+workflows:
+  japan:
+    jobs:
+      - threatrix_scan:
+          context:
+            - threatrix
+            - CICD
+            - ARTIFACTORY_SERVICE_ACCOUNT
+      - build_test_save:
+          context:
+            - CICD
+            - ARTIFACTORY_SERVICE_ACCOUNT
+      - push_test_results:
+          context: CICD
+          requires:
+            - build_test_save
+      - build-and-push-etl-image:
+          context:
+            - CICD
+            - AWS
+            - ARTIFACTORY_SERVICE_ACCOUNT
+          requires:
+            - build_test_save
+          filters:
+            branches:
+              ignore: "dependabot/*"
+      - docker-compose-build:
+          context:
+            - CICD
+            - ARTIFACTORY_SERVICE_ACCOUNT
+          requires:
+            - build_test_save
+      - build-and-push-schema-image:
+          name: Deploy schema image to ECR
+          context:
+            - AWS_OPERATIONS_0
+            - ARTIFACTORY_SERVICE_ACCOUNT
+          push_account: "697519554137"
+          requires:
+            - build_test_save
+          filters:
+            tags:
+              ignore: /.*/
+            branches:
+              only:
+                - main
+                - /.*deploy.*/
+      - build-and-push-pyapi-image:
+          name: Push pyapi dev image to ECR
+          context:
+            - AWS_OPERATIONS_0
+            - ARTIFACTORY_SERVICE_ACCOUNT
+          push_account: "697519554137"
+          requires:
+            - build_test_save
+            - docker-compose-build
+          filters:
+            tags:
+              ignore: /.*/
+            branches:
+              only:
+                - main
+                - /.*deploy.*/
+      - build-and-push-lambda-image:
+          name: Push lambda dev image to ECR
+          context:
+            - AWS_OPERATIONS_0
+            - ARTIFACTORY_SERVICE_ACCOUNT
+          push_account: "697519554137"
+          requires:
+            - build_test_save
+            - docker-compose-build
+          filters:
+            tags:
+              ignore: /.*/
+            branches:
+              only:
+                - main
+                - /.*deploy.*/
+      - build-and-push-forecast-jobs-image:
+          name: Push forecast jobs image to ECR
+          context:
+            - AWS_OPERATIONS_0
+            - ARTIFACTORY_SERVICE_ACCOUNT
+          push_account: "697519554137"
+          requires:
+            - build_test_save
+          filters:
+            tags:
+              ignore: /.*/
+            branches:
+              only:
+                - main
+                - /.*deploy.*/
+      - notify:
+          context: CICD
+          requires:
+            - build-and-push-etl-image

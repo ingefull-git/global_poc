@@ -1,30 +1,27 @@
 version: 2.1
 
-jobs:
-  echo-image:
-    docker:
-      - image: cimg/python:3.10
-    parameters:
-      target:
-        type: string
-    steps:
-      - run:
-          name: Simulate image build
-          command: echo "🔧 This is the ETL job for << parameters.target >>"
+setup: true
+
+orbs:
+  path-filtering: circleci/path-filtering@1.3.0  # Official CircleCI path-filtering orb
+
+# Define parameters that will be passed after path-filtering
+parameters:
+  build_common:
+    type: boolean
+    default: false
+  build_japan:
+    type: boolean
+    default: false
 
 workflows:
-  etl-build:
+  setup-workflow:
     jobs:
-      - echo-image:
-          name: echo-common
-          target: common
-          filters:
-            branches:
-              only: /.*common.*/
+      - path-filtering/filter:
+          name: etl-changes
+          base-revision: main
+          config-path: src/etl/.circleci/etl-config.yml
+          mapping: |
+            src/etl/common/.* build_common true
+            src/etl/japan/.* build_japan true
 
-      - echo-image:
-          name: echo-japan
-          target: japan
-          filters:
-            branches:
-              only: /.*japan.*/
