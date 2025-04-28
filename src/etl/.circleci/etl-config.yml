@@ -1,40 +1,37 @@
 version: 2.1
 
-jobs:
-  build-and-push-common-image:
-    docker:
-      - image: cimg/python:3.10
-    steps:
-      - checkout
-      - run:
-          name: Build and push common image
-          command: |
-            echo "Building and pushing common image for tag: common_${CIRCLE_SHA1::7}"
-            # Add your docker build/push commands here
+parameters:
+  build_common:
+    type: boolean
+    default: false
+  build_japan:
+    type: boolean
+    default: false
 
-  build-and-push-japan-image:
+jobs:
+  say-hello-common:
     docker:
-      - image: cimg/python:3.10
+      - image: cimg/base:stable
     steps:
-      - checkout
       - run:
-          name: Build and push japan image
-          command: |
-            echo "Building and pushing japan image for tag: japan_${CIRCLE_SHA1::7}"
-            # Add your docker build/push commands here
+          name: Print Common Service Message
+          command: echo "Hello from Common Service!"
+
+  say-hello-japan:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run:
+          name: Print Japan Service Message
+          command: echo "Hello from Japan Service!"
 
 workflows:
-  version: 2
-  build_common:
-    when:
-      condition:
-        equal: ["true", << pipeline.parameters.build_common >>]
+  service-common:
+    when: << pipeline.parameters.build_common >>
     jobs:
-      - build-and-push-common-image
+      - say-hello-common
 
-  build_japan:
-    when:
-      condition:
-        equal: ["true", << pipeline.parameters.build_japan >>]
+  service-japan:
+    when: << pipeline.parameters.build_japan >>
     jobs:
-      - build-and-push-japan-image
+      - say-hello-japan
