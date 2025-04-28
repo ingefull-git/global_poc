@@ -49,19 +49,15 @@ workflows:
   main-workflow:
     jobs:
       - migration-changes
-      - migrations-forecast:
-          requires:
-            - migration-changes
-          when:
-            condition:
-              and:
-                - equal: [true, << pipeline.parameters.migrate_forecast >>]
-                - equal: [true, << pipeline.parameters.migration_steps >>]
-      - migrations-japan:
-          requires:
-            - migration-changes
-          when:
-            condition:
-              and:
-                - equal: [true, << pipeline.parameters.migrate_japan >>]
-                - equal: [true, << pipeline.parameters.migration_steps >>]
+
+  service-forecast:
+    when:
+      - equal: [true, << pipeline.parameters.migrate_forecast >>]
+    jobs:
+      - migrations-forecast
+
+  service-japan:
+    when:
+      - equal: [true, << pipeline.parameters.migrate_japan >>]
+    jobs:
+      - migrations-japan
