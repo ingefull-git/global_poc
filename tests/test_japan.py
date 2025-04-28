@@ -6,7 +6,7 @@ import pytest
 # Define the expected schema for the japan database
 EXPECTED_SCHEMA = {
     "japan": {
-        "columns": ["id", "data", "created_at"],
+        "columns": ["id", "data", "created_to"],
     }
 }
 
