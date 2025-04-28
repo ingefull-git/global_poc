@@ -26,12 +26,12 @@ jobs:
           command: echo "Hello from Japan migrations!"
 
 workflows:
-  service-forecast:
-    when: << pipeline.parameters.migrate_forecast >>
-    jobs:
-      - migrations-forecast
+  # service-forecast:
+  #   when: << pipeline.parameters.migrate_forecast >>
+  #   jobs:
+  #     - migrations-forecast
 
-  service-japan:
-    when: << pipeline.parameters.migrate_japan >>
-    jobs:
-      - migrations-japan
+  # service-japan:
+  #   when: << pipeline.parameters.migrate_japan >>
+  #   jobs:
+  #     - migrations-japan
