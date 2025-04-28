@@ -47,7 +47,7 @@ jobs:
       - run:
           name: Check migrate_forecast Parameter
           command: |
-            if [ "${CIRCLE_PIPELINE_PARAMETERS.migrate_forecast}" != "true" ]; then
+            if [ "$migrate_forecast" != "true" ]; then
               echo "Skipping: migrate_forecast is not set to true."
               exit 0
             fi
@@ -62,7 +62,7 @@ jobs:
       - run:
           name: Check migrate_japan Parameter
           command: |
-            if [ "${CIRCLE_PIPELINE_PARAMETERS.migrate_japan}" != "true" ]; then
+            if [ "$migrate_japan" != "true" ]; then
               echo "Skipping: migrate_japan is not set to true."
               exit 0
             fi
