@@ -43,11 +43,11 @@ jobs:
       - run:
           name: Deploy Forecast Schema
           command: |
-            sqitch deploy db:pg://test_user:test_pass@postgres:5432/test_db --chdir db_migrations/forecast
+            sqitch deploy db_migrations/forecast pg
       - run:
           name: Deploy Japan Schema
           command: |
-            sqitch deploy db:pg://test_user:test_pass@postgres:5432/test_db --chdir db_migrations/japan
+            sqitch deploy db_migrations/japan pg
       - run:
           name: Run Tests + Lint
           command: |
