@@ -7,7 +7,7 @@ orbs:
 
 # Define parameters that will be passed after path-filtering
 parameters:
-  build_common:
+  build_forecast:
     type: boolean
     default: false
   build_japan:
