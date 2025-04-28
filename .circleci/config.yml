@@ -26,6 +26,11 @@ jobs:
           mapping: |
             db_migrations/forecast/.* migrate_forecast true
             db_migrations/japan/.* migrate_japan true
+      - run:
+          name: Print Migration Changes
+          command: |
+            echo "Forecast migration: << pipeline.parameters.migrate_forecast >>"
+            echo "Japan migration: << pipeline.parameters.migrate_japan >>"
 
   migrations-forecast:
     docker:
