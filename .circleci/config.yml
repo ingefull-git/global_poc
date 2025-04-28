@@ -30,11 +30,6 @@ jobs:
             echo "Pipeline parameters:"
             echo "migrate_forecast: << pipeline.parameters.migrate_forecast >>"
             echo "migrate_japan: << pipeline.parameters.migrate_japan >>"
-      - path-filtering/set-parameters:
-          base-revision: main
-          mapping: |
-            db_migrations/forecast/.* migrate_forecast true
-            db_migrations/japan/.* migrate_japan true
       - run:
           name: Print Migration Changes
           command: |
@@ -64,6 +59,15 @@ jobs:
 
 
 workflows:
+  setup-workflow:
+    jobs:
+      - path-filtering/filter:
+          name: migrate-changes
+          base-revision: main
+          config-path: .circleci/migrations-config.yml
+          mapping: |
+            db_migrations/forecast/.* migrate_forecast true
+            db_migrations/japan/.* migrate_japan true
 
   detect-changes:
     jobs:
