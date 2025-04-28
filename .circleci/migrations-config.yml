@@ -1,7 +1,7 @@
 version: 2.1
 
 parameters:
-  build_common:
+  build_forecast:
     type: boolean
     default: false
   build_japan:
@@ -9,13 +9,13 @@ parameters:
     default: false
 
 jobs:
-  say-hello-common:
+  say-hello-forecast:
     docker:
       - image: cimg/base:stable
     steps:
       - run:
-          name: Print Common Service Message
-          command: echo "Hello from Common Service!"
+          name: Print forecast Service Message
+          command: echo "Hello from forecast Service!"
 
   say-hello-japan:
     docker:
@@ -26,10 +26,10 @@ jobs:
           command: echo "Hello from Japan Service!"
 
 workflows:
-  service-common:
-    when: << pipeline.parameters.build_common >>
+  service-forecast:
+    when: << pipeline.parameters.build_forecast >>
     jobs:
-      - say-hello-common
+      - say-hello-forecast
 
   service-japan:
     when: << pipeline.parameters.build_japan >>
