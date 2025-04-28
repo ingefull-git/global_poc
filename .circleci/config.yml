@@ -7,20 +7,57 @@ orbs:
 
 # Define parameters that will be passed after path-filtering
 parameters:
-  build_forecast:
+  migrate_forecast:
     type: boolean
     default: false
-  build_japan:
+  migrate_japan:
     type: boolean
     default: false
 
-workflows:
-  setup-workflow:
-    jobs:
-      - path-filtering/filter:
-          name: migration-changes
+
+jobs:
+  detect-changes:
+    docker:
+      - image: cimg/python:3.11
+    steps:
+      - checkout
+      - path-filtering/set-parameters:
           base-revision: main
-          config-path: .circleci/migrations-config.yml
           mapping: |
-            db_migrations/forecast/.* build_forecast true
-            db_migrations/japan/.* build_japan true
+            db_migrations/forecast/.* migrate_forecast true
+            db_migrations/japan/.* migrate_japan true
+
+  migrations-forecast:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run:
+          name: Print forecast Service Message
+          command: echo "Hello from forecast migrations!"
+
+  migrations-japan:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run:
+          name: Print Japan Service Message
+          command: echo "Hello from Japan migrations!"
+
+
+workflows:
+
+  detect-changes:
+    jobs:
+      - detect-changes
+  service-forecast:
+    requires:
+      - detect-changes
+    when: << pipeline.parameters.migrate_forecast >>
+    jobs:
+      - migrations-forecast
+  service-japan:
+    requires:
+      - detect-changes
+    when: << pipeline.parameters.migrate_japan >>
+    jobs:
+      - migrations-japan
