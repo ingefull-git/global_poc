@@ -1,2 +1,4 @@
-%syntax-version=1.0.0
-%project=japan
+%project japan
+%uri https://example.com/japan
+
+create_table 2025-04-28T12:00:00Z username
