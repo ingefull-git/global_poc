@@ -1,10 +1,10 @@
 version: 2.1
 
 parameters:
-  build_forecast:
+  migrate_forecast:
     type: boolean
     default: false
-  build_japan:
+  migrate_japan:
     type: boolean
     default: false
 
@@ -27,11 +27,11 @@ jobs:
 
 workflows:
   service-forecast:
-    when: << pipeline.parameters.build_forecast >>
+    when: << pipeline.parameters.migrate_forecast >>
     jobs:
       - migrations-forecast
 
   service-japan:
-    when: << pipeline.parameters.build_japan >>
+    when: << pipeline.parameters.migrate_japan >>
     jobs:
       - migrations-japan
