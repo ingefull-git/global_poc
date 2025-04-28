@@ -51,13 +51,11 @@ workflows:
       - migration-changes
 
   service-forecast:
-    when:
-      - equal: [true, << pipeline.parameters.migrate_forecast >>]
+    when: << pipeline.parameters.migrate_forecast >>
     jobs:
       - migrations-forecast
 
   service-japan:
-    when:
-      - equal: [true, << pipeline.parameters.migrate_japan >>]
+    when: << pipeline.parameters.migrate_japan >>
     jobs:
       - migrations-japan
