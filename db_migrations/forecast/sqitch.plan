@@ -1,4 +1,4 @@
 %project forecast
 %uri https://example.com/forecast
 
-create_table 2025-04-28T12:00:00Z username
+create_table 2025-04-28T12:00:00Z # username
