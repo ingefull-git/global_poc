@@ -24,6 +24,4 @@ workflows:
           mapping: |
             src/etl/common/.* build_common true
             src/etl/japan/.* build_japan true
-          executor:
-            docker:
-              - image: cimg/python:3.9
+
