@@ -12,7 +12,7 @@ parameters:
     default: false
 
 jobs:
-  migration-changes:
+  pre-changes:
     docker:
       - image: cimg/python:3.11
     steps:
@@ -28,6 +28,18 @@ jobs:
             echo "migrate_forecast: << pipeline.parameters.migrate_forecast >>"
             echo "migrate_japan: << pipeline.parameters.migrate_japan >>"
             echo '{"migration_steps": true}' > /tmp/pipeline-parameters.json
+
+  post-changes:
+    docker:
+      - image: cimg/python:3.11
+    steps:
+      - checkout
+      - run:
+          name: Debug Path Filtering
+          command: |
+            echo "Second revision: main"
+
+
 
   migrations-forecast:
     docker:
@@ -48,7 +60,8 @@ jobs:
 workflows:
   main-workflow:
     jobs:
-      - migration-changes
+      - pre-changes
+      - post-changes
 
   service-forecast:
     when: << pipeline.parameters.migrate_forecast >>
