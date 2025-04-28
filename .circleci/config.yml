@@ -21,9 +21,17 @@ jobs:
       - image: cimg/python:3.11
     steps:
       - checkout
+      - run:
+          name: Debug Path Filtering
+          command: |
+            echo "Base revision: main"
+            git fetch origin main
+            git diff --name-only origin/main
+            echo "Pipeline parameters:"
+            echo "migrate_forecast: << pipeline.parameters.migrate_forecast >>"
+            echo "migrate_japan: << pipeline.parameters.migrate_japan >>"
       - path-filtering/set-parameters:
           base-revision: main
-          verbose: true
           mapping: |
             db_migrations/forecast/.* migrate_forecast true
             db_migrations/japan/.* migrate_japan true
