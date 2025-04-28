@@ -7,6 +7,9 @@ parameters:
   migrate_japan:
     type: boolean
     default: false
+  migration_steps:
+    type: boolean
+    default: false
 
 jobs:
   migration-changes:
@@ -23,6 +26,7 @@ jobs:
             echo "Pipeline parameters:"
             echo "migrate_forecast: << pipeline.parameters.migrate_forecast >>"
             echo "migrate_japan: << pipeline.parameters.migrate_japan >>"
+            echo '{"migration_steps": true}' > /tmp/pipeline-parameters.json
 
   migrations-forecast:
     docker:
@@ -44,11 +48,21 @@ workflows:
   main-workflow:
     jobs:
       - migration-changes
-      - migrations-forecast:
-          requires:
-            - migration-changes
-          when: << pipeline.parameters.migrate_forecast >>
-      - migrations-japan:
-          requires:
-            - migration-changes
-          when: << pipeline.parameters.migrate_japan >>
+
+  service-forecast:
+    when:
+      condition:
+        and:
+          - equal: [true, << pipeline.parameters.migrate_forecast >>]
+          - equal: [true, << pipeline.parameters.migration_steps >>]
+    jobs:
+      - migrations-forecast
+
+  service-japan:
+    when:
+      condition:
+        and:
+          - equal: [true, << pipeline.parameters.migrate_japan >>]
+          - equal: [true, << pipeline.parameters.migration_steps >>]
+    jobs:
+      - migrations-japan
