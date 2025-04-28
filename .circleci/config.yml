@@ -3,7 +3,7 @@ version: 2.1
 setup: true
 
 orbs:
-  path-filtering: circleci/path-filtering@1.2.0  # Official CircleCI path-filtering orb
+  path-filtering: circleci/path-filtering@1.3.0  # Official CircleCI path-filtering orb
 
 # Define parameters that will be passed after path-filtering
 parameters:
