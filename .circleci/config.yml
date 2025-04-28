@@ -43,11 +43,15 @@ jobs:
   migrations-forecast:
     docker:
       - image: cimg/base:stable
+    parameters:
+      migrate_forecast:
+        type: boolean
+        default: false
     steps:
       - run:
           name: Check migrate_forecast Parameter
           command: |
-            if [ "$migrate_forecast" != "true" ]; then
+            if [ "<< parameters.migrate_forecast >>" != "true" ]; then
               echo "Skipping: migrate_forecast is not set to true."
               circleci-agent step halt
             fi
@@ -58,11 +62,15 @@ jobs:
   migrations-japan:
     docker:
       - image: cimg/base:stable
+    parameters:
+      migrate_japan:
+        type: boolean
+        default: false
     steps:
       - run:
           name: Check migrate_japan Parameter
           command: |
-            if [ "$migrate_japan" != "true" ]; then
+            if [ "<< parameters.migrate_japan >>" != "true" ]; then
               echo "Skipping: migrate_japan is not set to true."
               circleci-agent step halt
             fi
@@ -81,5 +89,7 @@ workflows:
             db_migrations/forecast/.* migrate_forecast true
             db_migrations/japan/.* migrate_japan true
       - migration-changes
-      - migrations-forecast
-      - migrations-japan
+      - migrations-forecast:
+          migrate_forecast: << pipeline.parameters.migrate_forecast >>
+      - migrations-japan:
+          migrate_japan: << pipeline.parameters.migrate_japan >>
