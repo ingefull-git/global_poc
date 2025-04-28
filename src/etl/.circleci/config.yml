@@ -14,9 +14,43 @@ parameters:
     type: boolean
     default: false
 
+jobs:
+  test-lint-checks:
+    docker:
+      - image: cimg/python:3.11  # main container
+        name: market_etl
+      - image: localstack/localstack:latest  # localstack service
+        name: localstack
+        environment:
+          SERVICES: s3, secretsmanager
+          EDGE_PORT: 4566
+      - image: postgres:13  # postgres service
+        name: postgres
+        environment:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_pass
+          POSTGRES_DB: test_db
+    steps:
+      - checkout
+      - run:
+          name: Install requirements
+          command: |
+            pip install -r requirements.txt
+      - run:
+          name: Install Sqitch
+          command: |
+            sudo apt-get update && sudo apt-get install -y sqitch libpq-dev
+      - run:
+          name: Run Tests + Lint
+          command: |
+            chmod +x ./test_and_lint_checks.sh
+            ./test_and_lint_checks.sh
+
 workflows:
   setup-workflow:
     jobs:
+      - test-lint-checks
+
       - path-filtering/filter:
           name: etl-changes
           base-revision: main
