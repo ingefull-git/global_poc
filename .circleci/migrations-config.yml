@@ -29,9 +29,9 @@ workflows:
   service-forecast:
     when: << pipeline.parameters.build_forecast >>
     jobs:
-      - say-hello-forecast
+      - migrations-forecast
 
   service-japan:
     when: << pipeline.parameters.build_japan >>
     jobs:
-      - say-hello-japan
+      - migrations-japan
