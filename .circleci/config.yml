@@ -16,7 +16,7 @@ parameters:
 
 
 jobs:
-  detect-changes:
+  migration-changes:
     docker:
       - image: cimg/python:3.11
     steps:
@@ -48,16 +48,16 @@ workflows:
 
   detect-changes:
     jobs:
-      - detect-changes
+      - migration-changes
   service-forecast:
     requires:
-      - detect-changes
+      - migration-changes
     when: << pipeline.parameters.migrate_forecast >>
     jobs:
       - migrations-forecast
   service-japan:
     requires:
-      - detect-changes
+      - migration-changes
     when: << pipeline.parameters.migrate_japan >>
     jobs:
       - migrations-japan
