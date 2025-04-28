@@ -41,13 +41,21 @@ jobs:
           command: |
             sudo apt-get update && sudo apt-get install -y sqitch libpq-dev
       - run:
+          name: Wait for PostgreSQL
+          command: |
+            for i in {1..10}; do
+              pg_isready -h postgres -p 5432 && break
+              echo "Waiting for PostgreSQL to be ready..."
+              sleep 3
+            done
+      - run:
           name: Deploy Forecast Schema
           command: |
-            sqitch deploy --chdir db_migrations/forecast pg
+            sqitch deploy --chdir db_migrations/forecast
       - run:
           name: Deploy Japan Schema
           command: |
-            sqitch deploy --chdir db_migrations/japan pg
+            sqitch deploy --chdir db_migrations/japan
       - run:
           name: Run Tests + Lint
           command: |
