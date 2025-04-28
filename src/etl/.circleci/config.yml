@@ -18,7 +18,7 @@ workflows:
   setup-workflow:
     jobs:
       - path-filtering/filter:
-          name: detect-changes
+          name: etl-changes
           base-revision: main
           config-path: src/etl/.circleci/etl-config.yml
           mapping: |
