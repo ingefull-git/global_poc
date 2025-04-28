@@ -1,16 +1,19 @@
 #!/bin/bash
 
+# Directories to check
+PYTHON_DIRS="$@"
+
 # Run linting with flake8
-flake8 .
+flake8 $PYTHON_DIRS
 
 # Check import sorting with isort
-isort . --check-only
+isort $PYTHON_DIRS --check-only
 
 # Format code with black (check only, no changes)
-black . --check
+black $PYTHON_DIRS --check
 
 # Run type checking with mypy
-mypy .
+mypy $PYTHON_DIRS
 
 # Run tests with pytest
-pytest -svv tests/
+pytest $PYTHON_DIRS
