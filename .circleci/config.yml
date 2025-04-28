@@ -23,6 +23,7 @@ jobs:
       - checkout
       - path-filtering/set-parameters:
           base-revision: main
+          verbose: true
           mapping: |
             db_migrations/forecast/.* migrate_forecast true
             db_migrations/japan/.* migrate_japan true
@@ -31,6 +32,11 @@ jobs:
           command: |
             echo "Forecast migration: << pipeline.parameters.migrate_forecast >>"
             echo "Japan migration: << pipeline.parameters.migrate_japan >>"
+      - run:
+          name: Show Git Diff
+          command: |
+            git fetch origin main
+            git diff --name-only origin/main
 
   migrations-forecast:
     docker:
