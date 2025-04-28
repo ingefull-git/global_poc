@@ -57,7 +57,7 @@ jobs:
           command: echo "Hello from Japan migrations!"
 
 workflows:
-  setup-workflow:
+  main-workflow:
     jobs:
       - path-filtering/filter:
           name: migrate-changes
@@ -66,21 +66,8 @@ workflows:
           mapping: |
             db_migrations/forecast/.* migrate_forecast true
             db_migrations/japan/.* migrate_japan true
-
-  detect-changes:
-    jobs:
       - migration-changes
-
-  service-forecast:
-    when:
-      condition:
-        equal: ["true", << pipeline.parameters.migrate_forecast >>]
-    jobs:
-      - migrations-forecast
-
-  service-japan:
-    when:
-      condition:
-        equal: ["true", << pipeline.parameters.migrate_japan >>]
-    jobs:
-      - migrations-japan
+      - migrations-forecast:
+          when: << pipeline.parameters.migrate_forecast >>
+      - migrations-japan:
+          when: << pipeline.parameters.migrate_japan >>
