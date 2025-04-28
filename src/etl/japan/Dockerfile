@@ -1,2 +1,2 @@
 FROM python:3.10-slim
-RUN echo 'Japan image run 1'
+RUN echo 'Japan image run 2'
