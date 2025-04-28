@@ -20,7 +20,7 @@ workflows:
       - path-filtering/filter:
           name: detect-changes
           base-revision: main
-          config-path: .circleci/continue-config.yml
+          config-path: .circleci/migrations-config.yml
           mapping: |
-            src/etl/common/.* build_common true
-            src/etl/japan/.* build_japan true
+            src/db_migrations/forecast/.* build_forecast true
+            src/db_migrations/japan/.* build_japan true
