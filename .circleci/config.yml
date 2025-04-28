@@ -14,69 +14,6 @@ parameters:
     type: boolean
     default: false
 
-jobs:
-  migration-changes:
-    docker:
-      - image: cimg/python:3.11
-    steps:
-      - checkout
-      - run:
-          name: Debug Path Filtering
-          command: |
-            echo "Base revision: main"
-            git fetch origin main
-            git diff --name-only origin/main
-            echo "Pipeline parameters:"
-            echo "migrate_forecast: << pipeline.parameters.migrate_forecast >>"
-            echo "migrate_japan: << pipeline.parameters.migrate_japan >>"
-      - run:
-          name: Print Migration Changes
-          command: |
-            echo "Forecast migration: << pipeline.parameters.migrate_forecast >>"
-            echo "Japan migration: << pipeline.parameters.migrate_japan >>"
-      - run:
-          name: Show Git Diff
-          command: |
-            git fetch origin main
-            git diff --name-only origin/main
-
-  migrations-forecast:
-    docker:
-      - image: cimg/base:stable
-    parameters:
-      migrate_forecast:
-        type: boolean
-        default: false
-    steps:
-      - run:
-          name: Check migrate_forecast Parameter
-          command: |
-            if [ "<< parameters.migrate_forecast >>" != "true" ]; then
-              echo "Skipping: migrate_forecast is not set to true."
-              circleci-agent step halt
-            fi
-      - run:
-          name: Print forecast Service Message
-          command: echo "Hello from forecast migrations!"
-
-  migrations-japan:
-    docker:
-      - image: cimg/base:stable
-    parameters:
-      migrate_japan:
-        type: boolean
-        default: false
-    steps:
-      - run:
-          name: Check migrate_japan Parameter
-          command: |
-            if [ "<< parameters.migrate_japan >>" != "true" ]; then
-              echo "Skipping: migrate_japan is not set to true."
-              circleci-agent step halt
-            fi
-      - run:
-          name: Print Japan Service Message
-          command: echo "Hello from Japan migrations!"
 
 workflows:
   main-workflow:
@@ -88,8 +25,4 @@ workflows:
           mapping: |
             db_migrations/forecast/.* migrate_forecast true
             db_migrations/japan/.* migrate_japan true
-      - migration-changes
-      - migrations-forecast:
-          migrate_forecast: << pipeline.parameters.migrate_forecast >>
-      - migrations-japan:
-          migrate_japan: << pipeline.parameters.migrate_japan >>
+      
