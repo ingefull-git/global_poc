@@ -41,11 +41,15 @@ jobs:
 
             if [ -z "$CHANGED" ] && [ -z "$MARKETS" ]; then
               echo "No changes detected in src/ or db_migration/ directories"
+              echo "" > /tmp/changed_services.txt
             else
-              echo "export CHANGED_SERVICE_MARKETS=\"$CHANGED\"" >> $BASH_ENV
-              source $BASH_ENV
-              echo "Changed service/markets: $CHANGED_SERVICE_MARKETS"
+              echo "$CHANGED" > /tmp/changed_services.txt
+              echo "Changed service/markets: $CHANGED"
             fi
+      - persist_to_workspace:
+          root: /tmp
+          paths:
+            - changed_services.txt
 
   test-lint-checks:
     parameters:
@@ -55,6 +59,8 @@ jobs:
     executor: python-service-executor
     steps:
       - checkout
+      - attach_workspace:
+          at: /tmp
       - run:
           name: Install requirements
           command: |
@@ -66,9 +72,8 @@ jobs:
       - run:
           name: Conditional test run for << parameters.service >>
           command: |
-            source $BASH_ENV
             echo "Checking for changes in << parameters.service >>"
-            if echo "$CHANGED_SERVICE_MARKETS" | grep -q "<< parameters.service >>"; then
+            if grep -q "<< parameters.service >>" /tmp/changed_services.txt; then
               chmod +x src/etl/test_and_lint_checks.sh
               ./src/etl/test_and_lint_checks.sh
             else
