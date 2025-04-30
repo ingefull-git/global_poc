@@ -30,8 +30,8 @@ jobs:
           command: |
             git fetch origin main
             
-            CHANGED=$(git diff --name-only origin/main | grep '^src/' | cut -d'/' -f2,3 | sort -u | xargs)
-            MARKETS=$(git diff --name-only origin/main | grep '^db_migration/' | cut -d'/' -f2 | sort -u)
+            CHANGED=$(git diff --name-only origin/main | grep '^src/' || true | cut -d'/' -f2,3 | sort -u | xargs)
+            MARKETS=$(git diff --name-only origin/main | grep '^db_migration/' || true | cut -d'/' -f2 | sort -u)
 
             for market in $MARKETS; do
               for service in etl pyapi forecast; do
@@ -39,9 +39,13 @@ jobs:
               done
             done
 
-            echo "export CHANGED_SERVICE_MARKETS=\"$CHANGED\"" >> $BASH_ENV
-            source $BASH_ENV
-            echo "Changed service/markets: $CHANGED_SERVICE_MARKETS"
+            if [ -z "$CHANGED" ] && [ -z "$MARKETS" ]; then
+              echo "No changes detected in src/ or db_migration/ directories"
+            else
+              echo "export CHANGED_SERVICE_MARKETS=\"$CHANGED\"" >> $BASH_ENV
+              source $BASH_ENV
+              echo "Changed service/markets: $CHANGED_SERVICE_MARKETS"
+            fi
 
   test-lint-checks:
     parameters:
