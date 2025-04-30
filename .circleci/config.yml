@@ -58,9 +58,17 @@ jobs:
 
     executor: python-service-executor
     steps:
-      - checkout
       - attach_workspace:
           at: /tmp
+      - run:
+          name: Check if service needs testing
+          command: |
+            echo "Checking for changes in << parameters.service >>"
+            if ! grep -q "<< parameters.service >>" /tmp/changed_services.txt; then
+              echo "No changes for << parameters.service >>. Skipping all tests."
+              circleci-agent step halt
+            fi
+      - checkout
       - run:
           name: Install requirements
           command: |
@@ -70,15 +78,10 @@ jobs:
           command: |
             sudo apt-get update && sudo apt-get install -y sqitch libpq-dev
       - run:
-          name: Conditional test run for << parameters.service >>
+          name: Run tests and lint checks
           command: |
-            echo "Checking for changes in << parameters.service >>"
-            if grep -q "<< parameters.service >>" /tmp/changed_services.txt; then
-              chmod +x src/etl/test_and_lint_checks.sh
-              ./src/etl/test_and_lint_checks.sh
-            else
-              echo "No changes for << parameters.service >>. Skipping."
-            fi
+            chmod +x src/etl/test_and_lint_checks.sh
+            ./src/etl/test_and_lint_checks.sh
 
 workflows:
   version: 2
