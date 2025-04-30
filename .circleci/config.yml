@@ -73,6 +73,7 @@ jobs:
               ./src/etl/test_and_lint_checks.sh
             else
               echo "No changes for << parameters.service >>. Skipping."
+            fi
 
 workflows:
   version: 2
