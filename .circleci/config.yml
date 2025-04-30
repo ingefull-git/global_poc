@@ -47,8 +47,7 @@ jobs:
     parameters:
       service:
         type: string
-      market:
-        type: string
+
     executor: python-service-executor
     steps:
       - checkout
@@ -79,20 +78,17 @@ workflows:
       - test-lint-checks:
           name: test-etl
           service: "etl"
-          markets: ["common", "latam"]
           requires:
             - detect-changes
       
       - test-lint-checks:
           name: test-pyapi
           service: "pyapi"
-          markets: ["japan", "latam"]
           requires:
             - detect-changes
 
       - test-lint-checks:
           name: test-forecast
           service: "forecast"
-          markets: ["japan", "latam"]
           requires:
             - detect-changes
