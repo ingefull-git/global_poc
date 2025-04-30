@@ -1,28 +1,98 @@
 version: 2.1
 
-setup: true
+executors:
+  minimal-executor:
+    docker:
+      - image: cimg/base:stable
 
-orbs:
-  path-filtering: circleci/path-filtering@1.3.0  # Official CircleCI path-filtering orb
+  python-service-executor:
+    docker:
+      - image: cimg/python:3.11
+      - image: localstack/localstack:latest
+        name: localstack
+        environment:
+          SERVICES: s3,secretsmanager
+          EDGE_PORT: 4566
+      - image: postgres:13
+        name: postgres
+        environment:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_pass
+          POSTGRES_DB: test_db
 
-# Define parameters that will be passed after path-filtering
-parameters:
-  migrate_forecast:
-    type: boolean
-    default: false
-  migrate_japan:
-    type: boolean
-    default: false
+jobs:
+  detect-changes:
+    executor: minimal-executor
+    steps:
+      - checkout
+      - run:
+          name: Detect Changed Services and Markets
+          command: |
+            git fetch origin main
+            
+            CHANGED=$(git diff --name-only origin/main | grep '^src/' | cut -d'/' -f2,3 | sort -u | xargs)
+            MARKETS=$(git diff --name-only origin/main | grep '^db_migration/' | cut -d'/' -f2 | sort -u)
 
+            for market in $MARKETS; do
+              for service in etl pyapi forecast; do
+                CHANGED="$CHANGED $service/$market"
+              done
+            done
+
+            echo "export CHANGED_SERVICE_MARKETS=\"$CHANGED\"" >> $BASH_ENV
+            source $BASH_ENV
+            echo "Changed service/markets: $CHANGED_SERVICE_MARKETS"
+
+  test-lint-checks:
+    parameters:
+      service:
+        type: string
+      market:
+        type: string
+    executor: python-service-executor
+    steps:
+      - checkout
+      - run:
+          name: Install requirements
+          command: |
+            pip install -r requirements.txt
+      - run:
+          name: Install Sqitch
+          command: |
+            sudo apt-get update && sudo apt-get install -y sqitch libpq-dev
+      - run:
+          name: Conditional test run for << parameters.service >>/<< parameters.market >>
+          command: |
+            source $BASH_ENV
+            echo "Checking for changes in << parameters.service >>/<< parameters.market >>"
+            if echo "$CHANGED_SERVICE_MARKETS" | grep -q "<< parameters.service >>/<< parameters.market >>"; then
+              chmod +x src/etl/test_and_lint_checks.sh
+              ./src/etl/test_and_lint_checks.sh
+            else
+              echo "No changes for << parameters.service >>/<< parameters.market >>. Skipping."
 
 workflows:
-  main-workflow:
+  version: 2
+  main-pipeline:
     jobs:
-      - path-filtering/filter:
-          name: migrate-changes
-          base-revision: main
-          config-path: .circleci/migrations-config.yml
-          mapping: |
-            db_migrations/forecast/.* migrate_forecast true
-            db_migrations/japan/.* migrate_japan true
+      - detect-changes
+      - test-lint-checks:
+          name: test-etl
+          service: "etl"
+          markets: ["common", "latam"]
+          requires:
+            - detect-changes
       
+      - test-lint-checks:
+          name: test-pyapi
+          service: "pyapi"
+          markets: ["japan", "latam"]
+          requires:
+            - detect-changes
+
+      - test-lint-checks:
+          name: test-forecast
+          service: "forecast"
+          markets: ["japan", "latam"]
+          requires:
+            - detect-changes
