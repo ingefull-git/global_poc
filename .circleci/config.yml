@@ -78,6 +78,13 @@ jobs:
           command: |
             sudo apt-get update && sudo apt-get install -y sqitch libpq-dev
       - run:
+          name: Deploy Database Schemas
+          command: |
+            if grep -q "<< parameters.service >>" /tmp/changed_services.txt; then
+              sqitch deploy --chdir db_migrations/<< parameters.service >>/forecast
+              sqitch deploy --chdir db_migrations/<< parameters.service >>/market
+            fi
+      - run:
           name: Run tests and lint checks
           command: |
             chmod +x src/etl/test_and_lint_checks.sh
