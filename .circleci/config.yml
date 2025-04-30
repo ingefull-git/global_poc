@@ -60,15 +60,15 @@ jobs:
           command: |
             sudo apt-get update && sudo apt-get install -y sqitch libpq-dev
       - run:
-          name: Conditional test run for << parameters.service >>/<< parameters.market >>
+          name: Conditional test run for << parameters.service >>
           command: |
             source $BASH_ENV
-            echo "Checking for changes in << parameters.service >>/<< parameters.market >>"
-            if echo "$CHANGED_SERVICE_MARKETS" | grep -q "<< parameters.service >>/<< parameters.market >>"; then
+            echo "Checking for changes in << parameters.service >>"
+            if echo "$CHANGED_SERVICE_MARKETS" | grep -q "<< parameters.service >>"; then
               chmod +x src/etl/test_and_lint_checks.sh
               ./src/etl/test_and_lint_checks.sh
             else
-              echo "No changes for << parameters.service >>/<< parameters.market >>. Skipping."
+              echo "No changes for << parameters.service >>. Skipping."
 
 workflows:
   version: 2
