@@ -35,7 +35,7 @@ jobs:
             echo "" > /tmp/schema_changes.txt
             
             # Detect schema changes (db_migrations/market/service)
-            SCHEMA_CHANGES=$(git diff --name-only origin/main | grep '^db_migrations/')
+            SCHEMA_CHANGES=$(git diff --name-only origin/main | grep '^db_migrations/' || true)
             if [ -n "$SCHEMA_CHANGES" ]; then
               echo "$SCHEMA_CHANGES"
               echo "Found schema changes"
@@ -52,8 +52,6 @@ jobs:
                 fi
               done <<< "$SCHEMA_CHANGES"
             fi
-              fi
-            done
             
             # Detect service changes (src/service/market)
             git diff --name-only origin/main | grep '^src/' || true | while read -r file; do
