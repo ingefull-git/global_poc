@@ -34,8 +34,7 @@ jobs:
             echo "" > /tmp/schema_changes.txt
             echo "" > /tmp/detected_changes.txt
 
-            # Detect schema changes (db_migrations/market/service)
-            git diff --name-only origin/main | grep '^db_migrations/' || true | while read -r file; do
+            while read -r file; do
               if [[ $file =~ ^db_migrations/([^/]+)/([^/]+)/ ]]; then
                 market="${BASH_REMATCH[1]}"
                 service="${BASH_REMATCH[2]}"
@@ -43,10 +42,10 @@ jobs:
                 echo "$market" >> /tmp/schema_changes.txt
                 echo "$service/$market" >> /tmp/changed_services.txt
               fi
-            done
+            done < <(git diff --name-only origin/main | grep '^db_migrations/' || true)
 
-            # Detect service changes (src/service/market)
-            git diff --name-only origin/main | grep '^src/' || true | while read -r file; do
+            # Service changes
+            while read -r file; do
               if [[ $file =~ ^src/([^/]+)/([^/]+)/ ]]; then
                 service="${BASH_REMATCH[1]}"
                 market="${BASH_REMATCH[2]}"
@@ -57,7 +56,7 @@ jobs:
                 echo "$service/$market" >> /tmp/changed_services.txt
                 echo "$market" >> /tmp/schema_changes.txt
               fi
-            done
+            done < <(git diff --name-only origin/main | grep '^src/' || true)
 
             # Get unique markets from all changes
             sort -u /tmp/schema_changes.txt -o /tmp/schema_changes.txt
