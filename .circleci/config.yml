@@ -34,16 +34,24 @@ jobs:
             echo "" > /tmp/changed_services.txt
             echo "" > /tmp/schema_changes.txt
             
-            # Detect schema changes (db_migrations/market/*)
-            git diff --name-only origin/main | grep '^db_migrations/' || true | while read -r file; do
-              if [[ $file =~ ^db_migrations/([^/]+)/ ]]; then
-                market="${BASH_REMATCH[1]}"
-                
-                # Add just the market name for schema changes
-                echo "$market" >> /tmp/schema_changes.txt
-                # Add service/market pairs for tests
-                echo "etl/$market" >> /tmp/changed_services.txt
-                echo "forecast/$market" >> /tmp/changed_services.txt
+            # Detect schema changes (db_migrations/market/service)
+            SCHEMA_CHANGES=$(git diff --name-only origin/main | grep '^db_migrations/')
+            if [ -n "$SCHEMA_CHANGES" ]; then
+              echo "$SCHEMA_CHANGES"
+              echo "Found schema changes"
+              while IFS= read -r file; do
+                if [[ $file =~ ^db_migrations/([^/]+)/([^/]+)/ ]]; then
+                  market="${BASH_REMATCH[1]}"
+                  service="${BASH_REMATCH[2]}"
+                  echo "Found changes for market: $market, service: $service"
+                  
+                  # Add market for schema deployment
+                  echo "$market" >> /tmp/schema_changes.txt
+                  # Add service/market pair for tests
+                  echo "$service/$market" >> /tmp/changed_services.txt
+                fi
+              done <<< "$SCHEMA_CHANGES"
+            fi
               fi
             done
             
