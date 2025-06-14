@@ -96,6 +96,8 @@ jobs:
             if ! grep -q "^<< parameters.service >>/" /tmp/changed_services.txt; then
               echo "No changes detected for << parameters.service >>. Skipping..."
               circleci-agent step halt
+            else
+              echo "Changes detected for << paramters.service >>, running tests..."
             fi
       - checkout
       - run:
