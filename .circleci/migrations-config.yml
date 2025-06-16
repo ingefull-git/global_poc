@@ -1,7 +1,6 @@
 version: 2.1
 
 parameters:
-  
   migrate_japan:
     type: boolean
     default: false
