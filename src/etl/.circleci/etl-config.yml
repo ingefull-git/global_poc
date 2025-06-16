@@ -27,13 +27,13 @@ jobs:
             echo "build_latam: << pipeline.parameters.build_latam >>"
             echo "test_all: << pipeline.parameters.test_all >>"
 
-  # run-tests:
-  #   docker:
-  #     - image: cimg/base:stable
-  #   steps:
-  #     - run:
-  #         name: Print all tests Message
-  #         command: echo "Running tests for all markets!"
+  run-tests:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run:
+          name: Print all tests Message
+          command: echo "Running tests for all markets!"
 
   # build-japan:
   #   docker:
@@ -64,9 +64,9 @@ workflows:
     jobs:
       - debug-params
 
-      # - run-tests:
-      #     when:
-      #       condition: << pipeline.parameters.test_all >>
+      - run-tests:
+          when:
+            condition: << pipeline.parameters.test_all >>
 
       # - build-common:
       #     requires:
