@@ -7,6 +7,9 @@ parameters:
   build_japan:
     type: boolean
     default: false
+  build_latam:              # <-- ADD THIS
+    type: boolean
+    default: false
   test_all:
     type: boolean
     default: false
@@ -43,39 +46,28 @@ jobs:
       - run:
           name: Print Common Market Message
           command: echo "Hello from Common Market!"
-      
+
 workflows:
   etl-pipeline:
     jobs:
-      # Run tests only if schema changes or market changes are detected
       - run-tests:
           when:
-            or:
-              - << pipeline.parameters.test_all >>
-              # - << pipeline.parameters.build_common >>
-              # - << pipeline.parameters.build_japan >>
-              # - << pipeline.parameters.build_latam >>
-      
-      # Build common if changes detected
+            condition: << pipeline.parameters.test_all >>
+
       - build-common:
           requires:
             - run-tests
           when:
             condition: << pipeline.parameters.build_common >>
-      
-      # Build japan if changes detected
+
       - build-japan:
           requires:
             - run-tests
           when:
             condition: << pipeline.parameters.build_japan >>
-      
-      # Build latam if changes detected
+
       - build-latam:
           requires:
             - run-tests
           when:
             condition: << pipeline.parameters.build_latam >>
-
-  
-
