@@ -1,74 +1,53 @@
 version: 2.1
 
 parameters:
-  migrate_forecast:
-    type: boolean
-    default: false
   migrate_japan:
     type: boolean
     default: false
-  migration_steps:
+  migrate_latam:
     type: boolean
     default: false
 
 jobs:
-  pre-changes:
-    docker:
-      - image: cimg/python:3.11
-    steps:
-      - checkout
-      - run:
-          name: Debug Path Filtering
-          command: |
-            echo "Base revision: main"
-            git fetch origin main
-            git diff --name-only origin/main
-            sleep 3
-            echo "Pipeline parameters:"
-            echo "migrate_forecast: << pipeline.parameters.migrate_forecast >>"
-            echo "migrate_japan: << pipeline.parameters.migrate_japan >>"
-            echo '{"migration_steps": true}' > /tmp/pipeline-parameters.json
-
-  post-changes:
-    docker:
-      - image: cimg/python:3.11
-    steps:
-      - checkout
-      - run:
-          name: Debug Path Filtering
-          command: |
-            echo "Second revision: main"
-
-
-
-  migrations-forecast:
+  debug-root-params:
     docker:
       - image: cimg/base:stable
     steps:
       - run:
-          name: Print forecast Service Message
-          command: echo "Hello from forecast migrations!"
+          name: Print Params
+          command: |
+            echo "migrate japan: << pipeline.parameters.migrate_japan >>"
+            echo "migrate latam: << pipeline.parameters.migrate_latam >>"
 
-  migrations-japan:
-    docker:
-      - image: cimg/base:stable
-    steps:
-      - run:
-          name: Print Japan Service Message
-          command: echo "Hello from Japan migrations!"
+  # migrations-latam:
+  #   docker:
+  #     - image: cimg/base:stable
+  #   steps:
+  #     - run:
+  #         name: Print Latam Service Message
+  #         command: echo "Hello from Latam migrations!"
+
+  # migrations-japan:
+  #   docker:
+  #     - image: cimg/base:stable
+  #   steps:
+  #     - run:
+  #         name: Print Japan Service Message
+  #         command: echo "Hello from Japan migrations!"
 
 workflows:
-  main-workflow:
-    jobs:
-      - pre-changes
-      - post-changes
+  migration-pipeline:
+    when:
+      or:  # Run this workflow if either Japan or Latam migrations are triggered
+        - << pipeline.parameters.migrate_japan >>
+        - << pipeline.parameters.migrate_latam >>
 
-  service-forecast:
-    when: << pipeline.parameters.migrate_forecast >>
     jobs:
-      - migrations-forecast
+      - debug-root-params
 
-  service-japan:
-    when: << pipeline.parameters.migrate_japan >>
-    jobs:
-      - migrations-japan
+    # migrations-japan:
+    #   when:
+    #     condition: << pipeline.parameters.migrate_japan >>
+    #   - migrations-latam:
+    #       when:
+    #         condition: << pipeline.parameters.migrate_latam >>

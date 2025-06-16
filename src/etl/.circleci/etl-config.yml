@@ -7,31 +7,93 @@ parameters:
   build_japan:
     type: boolean
     default: false
+  build_latam:
+    type: boolean
+    default: false
+  test_all:
+    type: boolean
+    default: false
 
 jobs:
-  say-hello-common:
+  debug-params:
     docker:
       - image: cimg/base:stable
     steps:
       - run:
-          name: Print Common Service Message
-          command: echo "Hello from Common Service!"
+          name: Print Params
+          command: |
+            echo "build_common: << pipeline.parameters.build_common >>"
+            echo "build_japan: << pipeline.parameters.build_japan >>"
+            echo "build_latam: << pipeline.parameters.build_latam >>"
+            echo "test_all: << pipeline.parameters.test_all >>"
 
-  say-hello-japan:
-    docker:
-      - image: cimg/base:stable
-    steps:
-      - run:
-          name: Print Japan Service Message
-          command: echo "Hello from Japan Service!"
+  # run-tests:
+  #   docker:
+  #     - image: cimg/base:stable
+  #   steps:
+  #     - run:
+  #         name: Print all tests Message
+  #         command: echo "Running tests for all markets!"
+
+  # build-japan:
+  #   docker:
+  #     - image: cimg/base:stable
+  #   steps:
+  #     - run:
+  #         name: Print Japan Market Message
+  #         command: echo "Hello from Japan Market!"
+
+  # build-latam:
+  #   docker:
+  #     - image: cimg/base:stable
+  #   steps:
+  #     - run:
+  #         name: Print Latam Market Message
+  #         command: echo "Hello from Latam Market!"
+
+  # build-common:
+  #   docker:
+  #     - image: cimg/base:stable
+  #   steps:
+  #     - run:
+  #         name: Print Common Market Message
+  #         command: echo "Hello from Common Market!"
 
 workflows:
-  service-common:
-    when: << pipeline.parameters.build_common >>
+  etl-pipeline:
+    when: 
+      or:
+        - << pipeline.parameters.test_all >>
+        - << pipeline.parameters.build_common >>
+        - << pipeline.parameters.build_japan >>
+        - << pipeline.parameters.build_latam >>
     jobs:
-      - say-hello-common
+      - debug-params
+         
+      # Run tests if any changes detected
+      # - run-tests:
+      #     when:
+      #       or:
+      #         - << pipeline.parameters.test_all >>
+      #         - << pipeline.parameters.build_common >>
+      #         - << pipeline.parameters.build_japan >>
+      #         - << pipeline.parameters.build_latam >>
 
-  service-japan:
-    when: << pipeline.parameters.build_japan >>
-    jobs:
-      - say-hello-japan
+      # Build jobs only run if their parameter is true and tests pass
+      # - build-common:
+      #     requires:
+      #       - run-tests
+      #     when:
+      #       condition: << pipeline.parameters.build_common >>
+
+      # - build-japan:
+      #     requires:
+      #       - run-tests
+      #     when:
+      #       condition: << pipeline.parameters.build_japan >>
+
+      # - build-latam:
+      #     requires:
+      #       - run-tests
+      #     when:
+      #       condition: << pipeline.parameters.build_latam >>
