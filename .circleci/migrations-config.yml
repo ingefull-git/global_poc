@@ -38,13 +38,16 @@ jobs:
 workflows:
   migration-pipeline:
     when:
-      condition: << pipeline.parameters.migrate_japan || pipeline.parameters.migrate_latam >>
+      or:  # Run this workflow if either Japan or Latam migrations are triggered
+        - << pipeline.parameters.migrate_japan >>
+        - << pipeline.parameters.migrate_latam >>
+
     jobs:
       - debug-root-params
 
-      # - migrations-japan:
-      #     when:
-      #       condition: << pipeline.parameters.migrate_japan >>
-      # - migrations-latam:
-      #     when:
-      #       condition: << pipeline.parameters.migrate_latam >>
+    # migrations-japan:
+    #   when:
+    #     condition: << pipeline.parameters.migrate_japan >>
+    #   - migrations-latam:
+    #       when:
+    #         condition: << pipeline.parameters.migrate_latam >>
