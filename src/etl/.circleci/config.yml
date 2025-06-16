@@ -75,7 +75,7 @@ workflows:
           config-path: src/etl/.circleci/etl-config.yml
           mapping: |
             db_migrations/.* test_all true
-            src/etl/common/.* build_common true
-            src/etl/japan/.* build_japan true
-            src/etl/latam/.* build_latam true
+            src/etl/common/.* build_common true test_all true
+            src/etl/japan/.* build_japan true test_all true
+            src/etl/latam/.* build_latam true test_all true
 
