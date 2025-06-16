@@ -1,13 +1,11 @@
 version: 2.1
 
 parameters:
-  migrate_forecast:
-    type: boolean
-    default: false
+  
   migrate_japan:
     type: boolean
     default: false
-  migration_steps:
+  migrate_latam:
     type: boolean
     default: false
 
@@ -20,14 +18,9 @@ jobs:
       - run:
           name: Debug Path Filtering
           command: |
-            echo "Base revision: main"
-            git fetch origin main
-            git diff --name-only origin/main
-            sleep 3
+            ls -la
             echo "Pipeline parameters:"
-            echo "migrate_forecast: << pipeline.parameters.migrate_forecast >>"
-            echo "migrate_japan: << pipeline.parameters.migrate_japan >>"
-            echo '{"migration_steps": true}' > /tmp/pipeline-parameters.json
+            echo "migrate_forecast: << pipeline.parameters.migrate_japan >>"
 
   post-changes:
     docker:
@@ -37,17 +30,17 @@ jobs:
       - run:
           name: Debug Path Filtering
           command: |
-            echo "Second revision: main"
+            ls -la
+            echo "Pipeline parameters:"
+            echo "migrate_forecast: << pipeline.parameters.migrate_latam >>"
 
-
-
-  migrations-forecast:
+  migrations-latam:
     docker:
       - image: cimg/base:stable
     steps:
       - run:
-          name: Print forecast Service Message
-          command: echo "Hello from forecast migrations!"
+          name: Print Latam Service Message
+          command: echo "Hello from Latam migrations!"
 
   migrations-japan:
     docker:
@@ -58,17 +51,30 @@ jobs:
           command: echo "Hello from Japan migrations!"
 
 workflows:
-  main-workflow:
+  pre-changes:
     jobs:
       - pre-changes
+  post-changes:
+    requires:
+      - pre-changes
+    when: << pipeline.parameters.migrate_latam >>
+    jobs:
       - post-changes
 
-  service-forecast:
-    when: << pipeline.parameters.migrate_forecast >>
+
+  service-latam:
+    when: << pipeline.parameters.migrate_latam >>
+    requires:
+      - pre-changes
+      - post-changes
     jobs:
-      - migrations-forecast
+      - migrations-latam
+
 
   service-japan:
     when: << pipeline.parameters.migrate_japan >>
+    requires:
+      - pre-changes
+      - post-changes
     jobs:
       - migrations-japan
