@@ -9,28 +9,40 @@ parameters:
     default: false
 
 jobs:
-  migrations-latam:
+  debug-params:
     docker:
       - image: cimg/base:stable
     steps:
       - run:
-          name: Print Latam Service Message
-          command: echo "Hello from Latam migrations!"
+          name: Print Params
+          command: |
+            echo "migrate japan: << pipeline.parameters.migrate_japan >>"
+            echo "migrate latam: << pipeline.parameters.migrate_latam >>"
 
-  migrations-japan:
-    docker:
-      - image: cimg/base:stable
-    steps:
-      - run:
-          name: Print Japan Service Message
-          command: echo "Hello from Japan migrations!"
+  # migrations-latam:
+  #   docker:
+  #     - image: cimg/base:stable
+  #   steps:
+  #     - run:
+  #         name: Print Latam Service Message
+  #         command: echo "Hello from Latam migrations!"
+
+  # migrations-japan:
+  #   docker:
+  #     - image: cimg/base:stable
+  #   steps:
+  #     - run:
+  #         name: Print Japan Service Message
+  #         command: echo "Hello from Japan migrations!"
 
 workflows:
   migration-pipeline:
     jobs:
-      - migrations-japan:
-          when:
-            condition: << pipeline.parameters.migrate_japan >>
-      - migrations-latam:
-          when:
-            condition: << pipeline.parameters.migrate_latam >>
+      - debug-params
+
+      # - migrations-japan:
+      #     when:
+      #       condition: << pipeline.parameters.migrate_japan >>
+      # - migrations-latam:
+      #     when:
+      #       condition: << pipeline.parameters.migrate_latam >>
