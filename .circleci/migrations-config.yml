@@ -9,30 +9,7 @@ parameters:
     type: boolean
     default: false
 
-jobs:
-  pre-changes:
-    docker:
-      - image: cimg/python:3.11
-    steps:
-      - checkout
-      - run:
-          name: Debug Path Filtering
-          command: |
-            ls -la
-            echo "Pipeline parameters:"
-            echo "migrate_forecast: << pipeline.parameters.migrate_japan >>"
 
-  post-changes:
-    docker:
-      - image: cimg/python:3.11
-    steps:
-      - checkout
-      - run:
-          name: Debug Path Filtering
-          command: |
-            ls -la
-            echo "Pipeline parameters:"
-            echo "migrate_forecast: << pipeline.parameters.migrate_latam >>"
 
   migrations-latam:
     docker:
@@ -51,30 +28,11 @@ jobs:
           command: echo "Hello from Japan migrations!"
 
 workflows:
-  pre-changes:
+  migration-pipeline:
     jobs:
-      - pre-changes
-  post-changes:
-    requires:
-      - pre-changes
-    when: << pipeline.parameters.migrate_latam >>
-    jobs:
-      - post-changes
-
-
-  service-latam:
-    when: << pipeline.parameters.migrate_latam >>
-    requires:
-      - pre-changes
-      - post-changes
-    jobs:
-      - migrations-latam
-
-
-  service-japan:
-    when: << pipeline.parameters.migrate_japan >>
-    requires:
-      - pre-changes
-      - post-changes
-    jobs:
-      - migrations-japan
+      - migrations-japan:
+          when:
+            condition: << pipeline.parameters.migrate_japan >>
+      - migrations-latam:
+          when:
+            condition: << pipeline.parameters.migrate_latam >>
