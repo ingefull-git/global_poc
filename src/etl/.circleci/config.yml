@@ -13,6 +13,9 @@ parameters:
   build_japan:
     type: boolean
     default: false
+  test_all:
+    type: boolean
+    default: false
 
 jobs:
   test-lint-checks:
@@ -65,13 +68,14 @@ jobs:
 workflows:
   setup-workflow:
     jobs:
-      - test-lint-checks
 
       - path-filtering/filter:
-          name: etl-changes
+          name: etl-pipeline-filter
           base-revision: main
           config-path: src/etl/.circleci/etl-config.yml
           mapping: |
+            db_migrations/.* test_all true
             src/etl/common/.* build_common true
             src/etl/japan/.* build_japan true
+            src/etl/latam/.* build_latam true
 
