@@ -31,7 +31,7 @@ workflows:
           base-revision: main
           config-path: .circleci/migrations-config.yml
           mapping: |
-            db_migrations/japan/.* build_japan true
-            db_migrations/latam/.* build_latam true
+            db_migrations/japan/.* migrate_japan true
+            db_migrations/latam/.* migrate_latam true
 
 
