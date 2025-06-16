@@ -1,21 +1,5 @@
 version: 2.1
 
-executors:
-  minimal-executor:
-    docker:
-      - image: cimg/base:stable
-
-  python-service-executor:
-    docker:
-      - image: cimg/python:3.11
-      - image: localstack/localstack:latest
-        name: localstack
-        environment:
-          SERVICES: s3,secretsmanager
-          EDGE_PORT: 4566
-      - image: postgres:13
-        name: postgres
-        environment:version: 2.1
 
 setup: true
 

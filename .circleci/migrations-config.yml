@@ -9,8 +9,7 @@ parameters:
     type: boolean
     default: false
 
-
-
+jobs:
   migrations-latam:
     docker:
       - image: cimg/base:stable
