@@ -9,7 +9,7 @@ parameters:
     default: false
 
 jobs:
-  debug-params:
+  debug-root-params:
     docker:
       - image: cimg/base:stable
     steps:
@@ -38,7 +38,7 @@ jobs:
 workflows:
   migration-pipeline:
     jobs:
-      - debug-params
+      - debug-root-params
 
       # - migrations-japan:
       #     when:
