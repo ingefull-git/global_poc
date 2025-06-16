@@ -61,16 +61,15 @@ jobs:
 
 workflows:
   etl-pipeline:
+    when: 
+      or:
+        - << pipeline.parameters.test_all >>
+        - << pipeline.parameters.build_common >>
+        - << pipeline.parameters.build_japan >>
+        - << pipeline.parameters.build_latam >>
     jobs:
-      # Always run debug to see what parameters were set
-      - debug-params:
-          when:
-              or:
-                - << pipeline.parameters.test_all >>
-                - << pipeline.parameters.build_common >>
-                - << pipeline.parameters.build_japan >>
-                - << pipeline.parameters.build_latam >>
-
+      - debug-params
+         
       # Run tests if any changes detected
       # - run-tests:
       #     when:
